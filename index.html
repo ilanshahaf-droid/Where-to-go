@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>לאן יוצאים בשבת?</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1B4B43">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="לאן יוצאים">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=Heebo:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --teal-dark:#1B4B43; --teal-darker:#123832;
+    --stone:#EFE6CE; --stone-line:#DCD0AE;
+    --olive:#6B7A3A; --olive-soft:#DCE3C7;
+    --amber:#E0942C; --amber-soft:#F7DFB6;
+    --ink:#20281F; --ink-soft:#54604E;
+    --card:#FBF8F1; --line: rgba(32,40,31,0.14);
+    --sky:#3E6E8E; --sky-soft:#D6E4EC;
+    --plum:#7A4B6B; --plum-soft:#E7D6E2;
+    --rust:#A85426; --rust-soft:#EED2BC;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --stone:#1B2119; --stone-line:#33392E; --card:#242A21; --ink:#EFE9DA; --ink-soft:#B9BFAC; --line: rgba(239,233,218,0.16);
+    }
+  }
+  :root[data-theme="dark"]{
+    --stone:#1B2119; --stone-line:#33392E; --card:#242A21; --ink:#EFE9DA; --ink-soft:#B9BFAC; --line: rgba(239,233,218,0.16);
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; background:var(--stone); color:var(--ink); font-family:"Heebo",sans-serif; line-height:1.5; }
+  h1,h2,h3,.serif{ font-family:"Frank Ruhl Libre", serif; }
+  .wrap{ max-width:820px; margin:0 auto; padding:0 18px 60px; }
+  header.hero{ background: linear-gradient(180deg, var(--teal-dark), var(--teal-darker)); color:var(--stone); padding:38px 18px 46px; margin-bottom:10px; }
+  header.hero .wrap{ padding:0; }
+  header.hero h1{ font-size:clamp(28px,6vw,42px); font-weight:900; margin:0 0 10px; letter-spacing:-0.01em; }
+  header.hero p{ margin:0; color:var(--amber-soft); font-size:16px; max-width:50ch; }
+  .blaze{ display:inline-flex; width:22px; height:22px; background:#fff; border:1.5px solid #1a1a1a; border-radius:2px; position:relative; flex:none; }
+  .blaze::before{ content:""; position:absolute; top:6px; bottom:6px; right:0; left:0; background:var(--blaze-color,#c0392b); }
+  .step-row{ display:flex; align-items:center; gap:8px; margin:22px 0 14px; flex-wrap:wrap; }
+  .step-row .stepline{ font-size:13px; color:var(--ink-soft); }
+  .step-row .stepline b{ color:var(--ink); font-weight:600; }
+  section.card{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:18px 18px 20px; margin-bottom:16px; }
+  section.card h2{ font-size:20px; margin:0 0 4px; font-weight:700; }
+  section.card .hint{ font-size:13.5px; color:var(--ink-soft); margin:0 0 14px; }
+  .btn-grid{ display:flex; flex-wrap:wrap; gap:8px; }
+  .opt-btn{ border:1.5px solid var(--line); background:transparent; color:var(--ink); padding:9px 15px; border-radius:20px; font-family:"Heebo",sans-serif; font-size:14px; cursor:pointer; transition:background .15s, border-color .15s, color .15s; }
+  .opt-btn:hover{ border-color:var(--olive); }
+  .opt-btn.active{ background:var(--olive); border-color:var(--olive); color:#fff; }
+  .opt-btn:focus-visible{ outline:2px solid var(--sky); outline-offset:2px; }
+  .type-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  .type-btn{ display:flex; flex-direction:column; align-items:center; gap:6px; border:1.5px solid var(--line); background:transparent; border-radius:10px; padding:14px 6px; cursor:pointer; font-family:"Heebo",sans-serif; color:var(--ink); }
+  .type-btn .ic{ font-size:24px; }
+  .type-btn span.lbl{ font-size:12.5px; text-align:center; }
+  .type-btn.active{ background:var(--olive-soft); border-color:var(--olive); }
+  @media (max-width:600px){ .type-grid{ grid-template-columns:repeat(3,1fr); } }
+  .subcat-group{ margin-bottom:14px; }
+  .subcat-group:last-child{ margin-bottom:0; }
+  .subcat-group .qlabel{ font-size:13.5px; color:var(--ink-soft); margin-bottom:6px; }
+  .gps-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:10px; }
+  .gps-status{ font-size:13px; color:var(--ink-soft); }
+  .link-btn{ background:none; border:none; color:var(--sky); text-decoration:underline; cursor:pointer; font-family:"Heebo",sans-serif; font-size:14px; padding:0; }
+  .results-count{ font-size:13.5px; color:var(--ink-soft); margin-bottom:10px; }
+  .filters-toggle summary{ cursor:pointer; font-weight:600; font-size:15px; padding:2px 0 10px; list-style:none; display:flex; align-items:center; gap:8px; }
+  .filters-toggle summary::-webkit-details-marker{ display:none; }
+  .filters-toggle summary::before{ content:"⚙"; color:var(--olive); }
+  .check-row{ display:flex; align-items:center; gap:8px; margin-top:4px; }
+  .check-row input{ width:16px; height:16px; accent-color:var(--olive); }
+  .check-row label{ font-size:14px; }
+  .view-toggle{ display:flex; gap:6px; margin-bottom:12px; }
+  .activity{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:10px; border-inline-start:5px solid var(--olive); display:flex; flex-direction:column; gap:6px; scroll-margin-top:16px; }
+  .activity.type-calm{ border-inline-start-color:var(--sky); }
+  .activity.type-cultural{ border-inline-start-color:var(--amber); }
+  .activity.type-adventure{ border-inline-start-color:var(--rust); }
+  .activity.type-food{ border-inline-start-color:var(--plum); }
+  .activity.type-workshop{ border-inline-start-color:#4c7a94; }
+  .activity.type-experience{ border-inline-start-color:#8a6d1f; }
+  .activity.flash{ animation: flash 1s ease; }
+  @keyframes flash{ 0%,100%{ background:var(--card);} 40%{ background:var(--olive-soft);} }
+  .activity .a-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+  .activity h3{ font-size:18px; margin:0; }
+  .activity .region-tag{ font-size:12px; color:var(--ink-soft); white-space:nowrap; }
+  .activity p.desc{ margin:0; font-size:14.5px; color:var(--ink-soft); }
+  .activity .tags{ display:flex; flex-wrap:wrap; gap:6px; margin-top:2px; }
+  .activity .tag{ font-size:12px; background:var(--olive-soft); color:var(--ink); padding:3px 9px; border-radius:12px; }
+  .activity.type-calm .tag{ background:var(--sky-soft); }
+  .activity.type-cultural .tag{ background:var(--amber-soft); }
+  .activity.type-adventure .tag{ background:var(--rust-soft); }
+  .activity.type-food .tag{ background:var(--plum-soft); }
+  .activity .meta-icons{ display:flex; flex-wrap:wrap; gap:10px; font-size:12.5px; color:var(--ink-soft); margin-top:2px; }
+  .activity .a-bottom{ display:flex; justify-content:space-between; align-items:center; margin-top:4px; }
+  .fav-btn{ background:none; border:none; font-size:20px; cursor:pointer; line-height:1; padding:2px; }
+  .del-btn{ background:none; border:none; color:#a33; font-size:12.5px; cursor:pointer; text-decoration:underline; }
+  .dist-tag{ font-size:12px; color:var(--ink-soft); }
+  .empty-note{ font-size:14px; color:var(--ink-soft); padding:10px 2px; }
+  details.add-form{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:4px 18px 4px; margin-bottom:16px; }
+  details.add-form summary{ cursor:pointer; padding:14px 0; font-weight:600; font-size:15px; list-style:none; display:flex; align-items:center; gap:8px; }
+  details.add-form summary::-webkit-details-marker{ display:none; }
+  details#add-form summary::before{ content:"+"; font-size:20px; color:var(--olive); font-weight:700; }
+  details#add-form[open] summary::before{ content:"–"; }
+  .form-body{ padding-bottom:16px; display:flex; flex-direction:column; gap:12px; }
+  .form-row label{ display:block; font-size:13px; color:var(--ink-soft); margin-bottom:5px; }
+  .form-row input[type=text], .form-row textarea, .form-row select{ width:100%; padding:9px 10px; border-radius:7px; border:1.5px solid var(--line); background:transparent; color:var(--ink); font-family:"Heebo",sans-serif; font-size:14px; }
+  .form-row textarea{ min-height:60px; resize:vertical; }
+  .save-btn{ background:var(--amber); color:#2a1c05; border:none; padding:11px 20px; border-radius:20px; font-family:"Heebo",sans-serif; font-weight:700; font-size:14.5px; cursor:pointer; align-self:flex-start; }
+  .save-btn:hover{ filter:brightness(0.95); }
+  .fav-section summary::before{ content:"★"; color:var(--amber); }
+  .reset-line{ text-align:center; margin-top:6px; }
+  .map-wrap{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:14px; }
+  .map-wrap .map-note{ font-size:12px; color:var(--ink-soft); text-align:center; margin:6px 0 0; }
+  .map-wrap svg{ width:100%; height:auto; display:block; }
+  .map-dot{ cursor:pointer; }
+  .map-dot circle{ transition: r .12s; }
+  .map-dot:hover circle{ r:7; }
+  .legend{ display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:8px; font-size:11.5px; color:var(--ink-soft); }
+  .legend span{ display:inline-flex; align-items:center; gap:4px; }
+  .legend i{ width:9px; height:9px; border-radius:50%; display:inline-block; }
+  @media (prefers-reduced-motion:no-preference){
+    .activity{ animation: rise .28s ease-out; }
+    @keyframes rise{ from{ opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <h1>לאן יוצאים בשבת?</h1>
+    <p>בוחרים איזור, סוג פעילות ועוד כמה פרטים — ומקבלים רעיונות שמתאימים בול למשפחה שלכם. מאגר רחב של טיולים, פעילויות תרבות, אתגרים, אוכל, סדנאות וחוויות מיוחדות בכל הארץ.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- STEP 1: LOCATION -->
+  <section class="card" id="step-location">
+    <div class="step-row"><span class="blaze" style="--blaze-color:#c0392b"></span><span class="stepline"><b>שלב 1</b> · איפה מחפשים?</span></div>
+    <h2>מיקום</h2>
+    <p class="hint">אפשר לבחור כמה אזורים בארץ בו-זמנית, או להשתמש במיקום הנוכחי כדי למצוא פעילויות קרובות.</p>
+    <div class="btn-grid" id="location-mode-buttons"></div>
+    <div id="region-picker" style="display:none; margin-top:12px;">
+      <div class="btn-grid" id="region-buttons"></div>
+    </div>
+    <div id="gps-picker" style="display:none;">
+      <div class="gps-row">
+        <button class="opt-btn" id="gps-locate-btn">📍 אתר את מיקומי</button>
+        <span class="gps-status" id="gps-status"></span>
+      </div>
+      <div id="radius-picker" style="display:none; margin-top:12px;">
+        <div class="subcat-group">
+          <div class="qlabel">רדיוס חיפוש</div>
+          <div class="btn-grid" id="radius-buttons"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 2: TYPE -->
+  <section class="card" id="step-type" style="display:none;">
+    <div class="step-row"><span class="blaze" style="--blaze-color:#2b6ea3"></span><span class="stepline"><b>שלב 2</b> · איזה סוג פעילות?</span></div>
+    <h2>סוג הפעילות</h2>
+    <div class="type-grid" id="type-buttons"></div>
+  </section>
+
+  <!-- STEP 3: SUBCATEGORIES -->
+  <section class="card" id="step-subcat" style="display:none;">
+    <div class="step-row"><span class="blaze" style="--blaze-color:#3d7a3d"></span><span class="stepline"><b>שלב 3</b> · עוד כמה פרטים</span></div>
+    <h2 id="subcat-title">פרטים נוספים</h2>
+    <div id="subcat-questions"></div>
+
+    <details class="filters-toggle" id="global-filters-details" style="margin-top:16px; border-top:1px solid var(--line); padding-top:14px;">
+      <summary>מסננים נוספים (גיל, תקציב, נגישות...)</summary>
+      <div id="global-filters"></div>
+    </details>
+  </section>
+
+  <!-- RESULTS -->
+  <section id="results-section" style="display:none;">
+    <div class="view-toggle" id="view-toggle"></div>
+    <div class="map-wrap" id="map-wrap" style="display:none;">
+      <div id="map-container"></div>
+      <div class="legend" id="map-legend"></div>
+      <p class="map-note">מפה סכמטית להתמצאות כללית · לחיצה על נקודה קופצת לכרטיס המתאים</p>
+    </div>
+    <div class="results-count" id="results-count"></div>
+    <div id="results-list"></div>
+    <div class="reset-line"><button class="link-btn" id="reset-btn">איפוס כל הסינון</button></div>
+  </section>
+
+  <!-- ADD CUSTOM -->
+  <details class="add-form" id="add-form">
+    <summary>הוספת פעילות משלי</summary>
+    <div class="form-body">
+      <div class="form-row"><label>שם הפעילות</label><input type="text" id="cf-name" placeholder="למשל: פארק השכונה שלנו"></div>
+      <div class="form-row"><label>איזור</label><select id="cf-region"></select></div>
+      <div class="form-row"><label>סוג פעילות</label><select id="cf-type"></select></div>
+      <div id="cf-subcats"></div>
+      <div class="form-row"><label>תיאור קצר (לא חובה)</label><textarea id="cf-desc" placeholder="פרטים שיעזרו לכם לזכור למה בחרתם במקום הזה"></textarea></div>
+      <button class="save-btn" id="cf-save">שמירת הפעילות</button>
+    </div>
+  </details>
+
+  <!-- FAVORITES -->
+  <details class="add-form fav-section" id="fav-details">
+    <summary>הפעילויות השמורות שלי (<span id="fav-count">0</span>)</summary>
+    <div class="form-body" id="fav-list" style="padding-bottom:14px;"></div>
+  </details>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const REGIONS = {
+    north:"צפון והגולן", haifa:"חיפה והסביבה", sharon:"השרון", center:"מרכז וגוש דן",
+    jerusalem:"ירושלים והסביבה", shfela:"שפלה", south:"הנגב", arava:"ים המלח והערבה"
+  };
+
+  const TYPES = {
+    hike:{label:"טיול", icon:"🥾", color:"var(--olive)"},
+    calm:{label:"פעילות רגועה", icon:"🌿", color:"var(--sky)"},
+    cultural:{label:"תרבותית", icon:"🏛️", color:"var(--amber)"},
+    adventure:{label:"ספורט / אתגר", icon:"🧗", color:"var(--rust)"},
+    food:{label:"בילוי עם אוכל", icon:"🍇", color:"var(--plum)"},
+    workshop:{label:"סדנאות", icon:"🎨", color:"#4c7a94"},
+    experience:{label:"חוויה מיוחדת", icon:"🏕️", color:"#8a6d1f"}
+  };
+
+  const QUESTIONS = {
+    hike:[
+      {key:"water", label:"מים במסלול", options:[["yes","עם מים"],["no","בלי מים"]]},
+      {key:"difficulty", label:"רמת קושי", options:[["easy","קל"],["medium","בינוני"],["hard","קשה"]]},
+      {key:"circular", label:"צורת מסלול", options:[["yes","מעגלי"],["no","קווי (הלוך ושוב)"]]},
+      {key:"duration", label:"משך משוער", options:[["short","עד שעתיים"],["medium","חצי יום"],["long","יום שלם"]]}
+    ],
+    calm:[
+      {key:"setting", label:"סוג המקום", options:[["nature","טבע / מעיין"],["park","פארק עירוני"],["beach","חוף ים"]]},
+      {key:"indoor", label:"בפנים או בחוץ", options:[["outdoor","בחוץ"],["indoor","בפנים"],["mixed","שילוב"]]}
+    ],
+    cultural:[
+      {key:"kind", label:"סוג האתר", options:[["museum","מוזיאון"],["zoo","גן חיות / ספארי"],["historic","אתר היסטורי"],["show","הופעה / אירוע"]]},
+      {key:"indoor", label:"בפנים או בחוץ", options:[["outdoor","בחוץ"],["indoor","בפנים"],["mixed","שילוב"]]}
+    ],
+    adventure:[
+      {key:"kind", label:"סוג האתגר", options:[["rope","פארק חבלים"],["climb","קיר טיפוס"],["water","קיאק / סאפ / פארק מים"],["trampoline","טרמפולינות"],["escape","חדר בריחה"],["quad","אופנועי שטח"]]},
+      {key:"indoor", label:"בפנים או בחוץ", options:[["outdoor","בחוץ"],["indoor","בפנים"],["mixed","שילוב"]]},
+      {key:"difficulty", label:"רמת אתגר", options:[["easy","קל"],["medium","בינוני"],["hard","גבוה"]]}
+    ],
+    food:[
+      {key:"kind", label:"סוג החוויה", options:[["winery","יקב"],["factory","מפעל שוקולד / גבינות"],["pickyourown","קטיף עצמי"],["market","שוק / סיור קולינרי"],["farm","חוות טעימות"]]},
+      {key:"indoor", label:"בפנים או בחוץ", options:[["outdoor","בחוץ"],["indoor","בפנים"],["mixed","שילוב"]]}
+    ],
+    workshop:[
+      {key:"kind", label:"סוג הסדנה", options:[["ceramics","קרמיקה"],["cooking","בישול / אפייה"],["art","אמנות"],["science","מדע וטכנולוגיה"],["nature","טבע ובעלי חיים"]]},
+      {key:"duration", label:"משך הסדנה", options:[["short","שעה-שעתיים"],["long","חצי יום ומעלה"]]}
+    ],
+    experience:[
+      {key:"kind", label:"סוג החוויה", options:[["glamping","גלמפינג"],["jeep","טיול ג'יפים"],["camel","רכיבת גמלים / סוסים"],["boat","שייט"],["overnight","לינה בשטח"]]},
+      {key:"duration", label:"משך", options:[["half","חצי יום"],["full","יום שלם"],["overnight","כולל לינה"]]}
+    ]
+  };
+
+  const GLOBAL_MULTI = [
+    {key:"ages", label:"גיל הילדים", options:[["toddlers","פעוטות (0-4)"],["kids","ילדים (5-12)"],["teens","בני נוער (13+)"]]},
+    {key:"budget", label:"תקציב", options:[["free","חינם"],["low","עלות מתונה"],["high","יקר יותר"]]},
+    {key:"group", label:"גודל קבוצה מתאים", options:[["small","קטנה (עד 4)"],["medium","בינונית (5-10)"],["large","גדולה (10+)"]]}
+  ];
+
+  const AC = "type-";
+
+  // ---------------- DATABASE ----------------
+  const BASE_ACTIVITIES = [
+    // ===== HIKES =====
+    {id:"banias", name:"נחל בניאס", region:"north", coords:[33.248,35.694], type:"hike", tags:{water:"yes",difficulty:"easy",circular:"no",duration:"short"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"מסלול הליכה קליל לאורך הנחל עם מפל מרשים בסופו, מתאים למשפחות עם ילדים."},
+    {id:"snir", name:"נחל שניר", region:"north", coords:[33.21,35.66], type:"hike", tags:{water:"yes",difficulty:"medium",circular:"no",duration:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"הליכה בין ברכות ואיים בנחל הזורם כל השנה, כולל קטעים רדודים במים."},
+    {id:"sachne", name:"גן השלושה (סחנה)", region:"north", coords:[32.503,35.391], type:"calm", tags:{setting:"nature",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"בריכות טבעיות מוצלות במים פושרים כל השנה, פופולרי מאוד למשפחות."},
+    {id:"amud", name:"נחל עמוד", region:"north", coords:[32.90,35.48], type:"hike", tags:{water:"yes",difficulty:"medium",circular:"no",duration:"long"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"מסלול נחל ארוך וירוק עם מערות וטחנות קמח עתיקות לאורך הדרך."},
+    {id:"yehudiya", name:"נחל יהודיה", region:"north", coords:[32.90,35.68], type:"hike", tags:{water:"yes",difficulty:"hard",circular:"no",duration:"long"}, ages:["teens"], budget:"low", stroller:false, dogs:false, group:["small"], desc:"מסלול גולני מאתגר עם קפיצות מים ובריכות, מתאים למשפחות עם ילדים גדולים."},
+    {id:"meron", name:"שביל הררי מירון", region:"north", coords:[32.985,35.412], type:"hike", tags:{water:"no",difficulty:"hard",circular:"yes",duration:"medium"}, ages:["teens"], budget:"free", stroller:false, dogs:true, group:["small","medium"], desc:"טיפוס אל הפסגה הגבוהה בצפון עם נוף פנורמי לגליל כולו."},
+    {id:"dishon", name:"נחל דישון", region:"north", coords:[33.05,35.35], type:"hike", tags:{water:"yes",difficulty:"medium",circular:"no",duration:"medium"}, ages:["kids","teens"], budget:"free", stroller:false, dogs:true, group:["small","medium"], desc:"מסלול צל ומים בגליל המערבי, פחות מוכר ולכן שקט יותר."},
+    {id:"arbel", name:"הר ארבל", region:"north", coords:[32.82,35.49], type:"hike", tags:{water:"no",difficulty:"hard",circular:"no",duration:"medium"}, ages:["teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"ירידה תלולה מהמצוק אל מול הכנרת, עם תצפית מרהיבה מהפסגה."},
+    {id:"gamla", name:"גמלא", region:"north", coords:[32.90,35.75], type:"hike", tags:{water:"no",difficulty:"medium",circular:"yes",duration:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"מסלול בגובה הרמה אל מול המפל הגבוה בישראל, עם תצפית על נשרים."},
+    {id:"canada-park", name:"פארק קנדה", region:"shfela", coords:[31.83,34.98], type:"hike", tags:{water:"no",difficulty:"easy",circular:"yes",duration:"short"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"שבילים מוצלים ביערות אורנים עם שרידים רומיים ובריכות עונתיות."},
+    {id:"sataf", name:"שאטף", region:"jerusalem", coords:[31.77,35.13], type:"hike", tags:{water:"yes",difficulty:"easy",circular:"yes",duration:"short"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"טרסות חקלאיות עתיקות עם מעיינות זורמים במרחק קצר מירושלים."},
+    {id:"ein-lavan", name:"עין לבן", region:"jerusalem", coords:[31.73,35.13], type:"hike", tags:{water:"yes",difficulty:"easy",circular:"yes",duration:"short"}, ages:["toddlers","kids","teens"], budget:"free", stroller:false, dogs:true, group:["small","medium"], desc:"בריכת מים כחולה בין ההרים, יעד קליל ומרענן לכל המשפחה."},
+    {id:"alexander", name:"נחל אלכסנדר", region:"sharon", coords:[32.39,34.87], type:"hike", tags:{water:"yes",difficulty:"easy",circular:"no",duration:"short"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"מסלול נגיש לאורך הנחל, ידוע כבית הגידול של הצבים הרכים."},
+    {id:"poleg", name:"נחל פולג", region:"sharon", coords:[32.27,34.85], type:"hike", tags:{water:"no",difficulty:"easy",circular:"no",duration:"short"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"רצועת חוף ונחל בשולי נתניה, מסלול קליל וקרוב לים."},
+    {id:"masada", name:"מצדה", region:"arava", coords:[31.32,35.35], type:"hike", tags:{water:"no",difficulty:"hard",circular:"no",duration:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"טיפוס אל מצודת הורדוס מעל ים המלח, עם רכבל לחוזרים מטה."},
+    {id:"ein-gedi", name:"עין גדי", region:"arava", coords:[31.46,35.38], type:"hike", tags:{water:"yes",difficulty:"medium",circular:"no",duration:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"נחל מדברי קבוע עם מפלים ובריכות טבעיות, וביניהם יעלים ושפני סלע."},
+    {id:"ein-avdat", name:"עין עבדת", region:"south", coords:[30.80,34.77], type:"hike", tags:{water:"yes",difficulty:"easy",circular:"no",duration:"short"}, ages:["toddlers","kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"קניון מדברי צר עם בריכות מים טבעיות ואפשרות לצפות בעופות דורסים."},
+    {id:"ramon-crater", name:"מכתש רמון - שביל תצפית", region:"south", coords:[30.61,34.80], type:"hike", tags:{water:"no",difficulty:"medium",circular:"yes",duration:"medium"}, ages:["kids","teens"], budget:"free", stroller:false, dogs:true, group:["small","medium","large"], desc:"הליכה על שפת המכתש הגדול בעולם עם נופי מדבר וגיאולוגיה חשופה."},
+    {id:"timna", name:"פארק תמנע", region:"south", coords:[29.78,34.99], type:"hike", tags:{water:"no",difficulty:"easy",circular:"yes",duration:"medium"}, ages:["toddlers","kids","teens"], budget:"low", stroller:false, dogs:true, group:["small","medium","large"], desc:"תצורות סלע אדומות ייחודיות, מכרות נחושת עתיקים ואגם מלאכותי לרגיעה."},
+    {id:"maayan-harod", name:"מעיין חרוד", region:"north", coords:[32.55,35.38], type:"hike", tags:{water:"yes",difficulty:"easy",circular:"yes",duration:"short"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"בריכת מעיין גדולה למרגלות הגלבוע, מוקפת מדשאות לפיקניק."},
+    {id:"wadi-qelt", name:"וואדי קלט", region:"jerusalem", coords:[31.83,35.40], type:"hike", tags:{water:"yes",difficulty:"medium",circular:"no",duration:"medium"}, ages:["kids","teens"], budget:"free", stroller:false, dogs:false, group:["small","medium"], desc:"מסלול קניון מדברי דרמטי עם מנזר חצוב בצוק ומעיינות לאורך הדרך."},
+    {id:"gilboa-irises", name:"שביל פרחי הבר בגלבוע", region:"north", coords:[32.48,35.42], type:"hike", tags:{water:"no",difficulty:"easy",circular:"no",duration:"short"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"מסלול קליל בין עשבוניות בר נדירות, מרשים במיוחד באביב."},
+    {id:"tavor-stream", name:"נחל תבור", region:"north", coords:[32.68,35.47], type:"hike", tags:{water:"yes",difficulty:"medium",circular:"no",duration:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"מסלול נחל צפוף בצמחייה עם ברכות עונתיות בין הרי הגליל התחתון."},
+    {id:"ein-jweiza", name:"עין ג'וויזה", region:"jerusalem", coords:[31.72,35.10], type:"hike", tags:{water:"yes",difficulty:"easy",circular:"yes",duration:"short"}, ages:["toddlers","kids","teens"], budget:"free", stroller:false, dogs:true, group:["small","medium"], desc:"מעיין קטן ושקט בהרי ירושלים, פחות מוכר ולכן נעים במיוחד."},
+    {id:"adullam", name:"שמורת עדולם", region:"shfela", coords:[31.62,34.95], type:"hike", tags:{water:"no",difficulty:"easy",circular:"yes",duration:"medium"}, ages:["kids","teens"], budget:"free", stroller:false, dogs:true, group:["small","medium","large"], desc:"נופי בתה ומערות טבעיות בין גבעות השפלה, שקט ופתוח."},
+    {id:"besor-stream", name:"נחל הבשור", region:"south", coords:[31.20,34.55], type:"hike", tags:{water:"yes",difficulty:"easy",circular:"no",duration:"medium"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"נחל איתן במערב הנגב עם שבילי הליכה ורכיבה לאורך הגדות."},
+    {id:"tzelim-stream", name:"נחל צאלים", region:"south", coords:[30.95,35.15], type:"hike", tags:{water:"yes",difficulty:"hard",circular:"no",duration:"long"}, ages:["teens"], budget:"free", stroller:false, dogs:false, group:["small"], desc:"מסלול מדברי מאתגר עם בריכות והרפתקה אמיתית, למשפחות מנוסות."},
+    {id:"nitzanim-dunes", name:"טיילת החולות בניצנים", region:"south", coords:[31.72,34.62], type:"hike", tags:{water:"no",difficulty:"easy",circular:"no",duration:"short"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"הליכה בין דיונות חול ענקיות עד לחוף הים, נעים גם עם עגלה."},
+    {id:"taninim-stream", name:"נחל תנינים", region:"sharon", coords:[32.55,34.90], type:"hike", tags:{water:"yes",difficulty:"easy",circular:"no",duration:"short"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"מסלול קצר ושטוח לאורך אחד הנחלים המעטים שזורמים כל השנה בשרון."},
+
+    // ===== CALM =====
+    {id:"rosh-hanikra", name:"ראש הנקרה", region:"north", coords:[33.09,35.10], type:"calm", tags:{setting:"nature",indoor:"mixed"}, ages:["toddlers","kids","teens"], budget:"high", stroller:true, dogs:false, group:["small","medium","large"], desc:"מערות נקיקים לבנות מול הים עם רכבל יורד אל קו החוף."},
+    {id:"achziv", name:"חוף אכזיב", region:"north", coords:[33.04,35.10], type:"calm", tags:{setting:"beach",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"חוף ים שקט עם בריכות טבעיות בין הסלעים, מצוין לילדים קטנים."},
+    {id:"dor", name:"חוף דור הבונים", region:"haifa", coords:[32.62,34.92], type:"calm", tags:{setting:"beach",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"מפרצונים וסלעי כורכר לחקירה, חוף טבעי ורגוע יחסית."},
+    {id:"yarkon", name:"פארק הירקון", region:"center", coords:[32.10,34.79], type:"calm", tags:{setting:"park",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"שטחי דשא, אגם סירות ושבילי אופניים לאורך נחל הירקון בלב תל אביב."},
+    {id:"palmachim", name:"חוף פלמחים", region:"center", coords:[31.93,34.69], type:"calm", tags:{setting:"beach",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"חוף טבעי ורחב עם דיונות חול, ללא בנייה מסחרית לאורך קו החוף."},
+    {id:"ein-hemed", name:"עין חמד", region:"jerusalem", coords:[31.80,35.13], type:"calm", tags:{setting:"nature",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"פארק מוצל סביב בריכה ומעיין, עם שטחי דשא נרחבים לפיקניק."},
+    {id:"sacher", name:"גן סאקר", region:"jerusalem", coords:[31.78,35.21], type:"calm", tags:{setting:"park",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"הפארק העירוני המרכזי של ירושלים עם מתחמי משחקים ושטחי דשא נרחבים."},
+    {id:"raanana-park", name:"פארק העירוני רעננה", region:"sharon", coords:[32.18,34.87], type:"calm", tags:{setting:"park",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"אגם, מדשאות ופינות משחק במרכז השרון, נעים לבילוי אחר הצהריים."},
+    {id:"ben-shemen-forest", name:"יער בן שמן", region:"center", coords:[31.95,34.92], type:"calm", tags:{setting:"nature",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"יער נטיעות ותיק עם שבילי אופניים ופינות פיקניק מוצלות."},
+    {id:"dead-sea", name:"חוף ים המלח", region:"arava", coords:[31.20,35.38], type:"calm", tags:{setting:"beach",indoor:"outdoor"}, ages:["kids","teens"], budget:"high", stroller:true, dogs:false, group:["small","medium","large"], desc:"ציפה קלה במים המלוחים ביותר בעולם, מתחמי רחצה מאורגנים לאורך החוף."},
+    {id:"ariel-sharon-park", name:"פארק אריאל שרון", region:"center", coords:[32.03,34.83], type:"calm", tags:{setting:"park",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"פארק ירוק ענק שהוקם על מזבלה לשעבר, עם גבעות, אגמים ותצפית פתוחה."},
+    {id:"bat-yam-beach", name:"חוף בת ים", region:"center", coords:[32.02,34.74], type:"calm", tags:{setting:"beach",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:false, group:["small","medium","large"], desc:"חוף עירוני נגיש עם טיילת ארוכה ופינות ישיבה מוצלות."},
+    {id:"agamon-hula", name:"אגמון החולה", region:"north", coords:[33.09,35.60], type:"calm", tags:{setting:"nature",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"אגם ושמורת ציפורים עם סיור עגלות רגוע, מרשים במיוחד בעונת הנדידה."},
+    {id:"bell-park", name:"גן הפעמון", region:"jerusalem", coords:[31.77,35.22], type:"calm", tags:{setting:"park",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"פארק קטן ומוצל בלב העיר עם פינת משחקים ופסלים ציבוריים."},
+    {id:"ashkelon-park", name:"הגן הלאומי אשקלון", region:"south", coords:[31.65,34.55], type:"calm", tags:{setting:"beach",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"שילוב של חוף ים ושרידים ארכיאולוגיים על מצוק ירוק ורחב."},
+    {id:"hachoresh-park", name:"גן החורש", region:"center", coords:[32.09,34.79], type:"calm", tags:{setting:"park",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"פארק שכונתי ירוק ושקט בלב תל אביב, עם פינות צל נעימות."},
+    {id:"olga-beach", name:"חוף אולגה", region:"sharon", coords:[32.48,34.87], type:"calm", tags:{setting:"beach",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"חוף שקט וידידותי למשפחות בין חדרה לנתניה, עם חניה נוחה."},
+    {id:"kfar-saba-park", name:"פארק כפר סבא", region:"sharon", coords:[32.17,34.91], type:"calm", tags:{setting:"park",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"מתחם ירוק עם אגם קטן, גני שעשועים ומסלולי אופניים."},
+    {id:"ein-fashkha", name:"עינות צוקים (עין פשחה)", region:"arava", coords:[31.57,35.45], type:"calm", tags:{setting:"nature",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"בריכות מים מתוקים ליד ים המלח, עם צל שיטים ומצפור עצים."},
+
+    // ===== CULTURAL =====
+    {id:"nimrod", name:"מבצר נמרוד", region:"north", coords:[33.25,35.77], type:"cultural", tags:{kind:"historic",indoor:"outdoor"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"מצודה מימי הביניים על רכס הררי עם מגדלים ומנהרות לטיפוס וגילוי."},
+    {id:"akko-tunnels", name:"מנהרת הטמפלרים, עכו העתיקה", region:"north", coords:[32.92,35.07], type:"cultural", tags:{kind:"historic",indoor:"mixed"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"סיור בעיר העתיקה ובמנהרה ההיסטורית מתחתיה, חוויה של פעם."},
+    {id:"bahai", name:"גני הבהאים", region:"haifa", coords:[32.815,34.988], type:"cultural", tags:{kind:"historic",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:false, group:["small","medium","large"], desc:"גנים מדורגים ומטופחים במורד הכרמל עם נוף פתוח למפרץ חיפה."},
+    {id:"eretz-israel", name:"מוזיאון ארץ ישראל", region:"center", coords:[32.11,34.80], type:"cultural", tags:{kind:"museum",indoor:"indoor"}, ages:["kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"קומפלקס פביליונים המציג ארכיאולוגיה, זכוכית ומטבעות בפעילות מודרכת."},
+    {id:"palmach-museum", name:"מוזיאון הפלמ\"ח", region:"center", coords:[32.09,34.79], type:"cultural", tags:{kind:"museum",indoor:"indoor"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"סיור חוויתי-דרמטי המשחזר את סיפור לוחמי הפלמ\"ח, מתאים מגיל בית ספר."},
+    {id:"safari", name:"הספארי - גן החיות רמת גן", region:"center", coords:[32.07,34.83], type:"cultural", tags:{kind:"zoo",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"high", stroller:true, dogs:false, group:["small","medium","large"], desc:"סיור רכוב בין חיות בר משוטטות, ולאחריו גן חיות הליכה עם עוד מאות מינים."},
+    {id:"antipatris", name:"מצודת אנטיפטריס (תל אפק)", region:"sharon", coords:[32.10,34.93], type:"cultural", tags:{kind:"historic",indoor:"outdoor"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"מצודה עות'מאנית על שרידי עיר עתיקה, לצד מעיינות הירקון."},
+    {id:"latrun", name:"מוזיאון השריון לטרון", region:"shfela", coords:[31.84,34.98], type:"cultural", tags:{kind:"museum",indoor:"mixed"}, ages:["kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"אוסף חוץ ענק של טנקים היסטוריים לצד תערוכה על קרבות שריון."},
+    {id:"israel-museum", name:"מוזיאון ישראל", region:"jerusalem", coords:[31.77,35.20], type:"cultural", tags:{kind:"museum",indoor:"indoor"}, ages:["teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"המוזיאון הגדול בישראל לאמנות וארכיאולוגיה, כולל מקדש הספר ומודל ירושלים העתיקה."},
+    {id:"bloomfield", name:"מוזיאון המדע ע\"ש בלומפילד", region:"jerusalem", coords:[31.78,35.20], type:"cultural", tags:{kind:"museum",indoor:"indoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"תערוכות אינטראקטיביות למגע ולהפעלה, מיועד במיוחד למשפחות עם ילדים."},
+    {id:"biblical-zoo", name:"הגן התנ\"כי ירושלים", region:"jerusalem", coords:[31.75,35.17], type:"cultural", tags:{kind:"zoo",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"high", stroller:true, dogs:false, group:["small","medium","large"], desc:"גן חיות נרחב עם דגש על מינים המוזכרים במקורות, כולל פינת חיות מגע."},
+    {id:"puppet-theater", name:"תיאטרון החאן / בובות ירושלים", region:"jerusalem", coords:[31.77,35.22], type:"cultural", tags:{kind:"show",indoor:"indoor"}, ages:["toddlers","kids"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"הצגות ילדים ובובות באולם אינטימי, אידאלי לילדים צעירים."},
+    {id:"gan-guru", name:"גן גורו", region:"shfela", coords:[31.72,34.86], type:"cultural", tags:{kind:"zoo",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"חוות קנגורו אוסטרלית שבה מותר ללטף ולהאכיל את בעלי החיים מקרוב."},
+    {id:"beit-guvrin", name:"בית גוברין - מערות המסתור", region:"shfela", coords:[31.61,34.90], type:"cultural", tags:{kind:"historic",indoor:"mixed"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"מערות פעמון ומערות יונים חצובות באדמה, אתר מורשת עולמית לגילוי וטיפוס."},
+    {id:"ramon-visitor-center", name:"מרכז המבקרים מצפה רמון", region:"south", coords:[30.61,34.80], type:"cultural", tags:{kind:"museum",indoor:"mixed"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"תערוכה גיאולוגית אינטראקטיבית עם תצפית ישירה אל תוך המכתש."},
+    {id:"tower-of-david", name:"מגדל דוד", region:"jerusalem", coords:[31.77,35.23], type:"cultural", tags:{kind:"historic",indoor:"mixed"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"מצודה עתיקה בלב העיר העתיקה עם תערוכות היסטוריה ותצוגת אור וקול בערבים."},
+    {id:"city-of-david", name:"עיר דוד", region:"jerusalem", coords:[31.77,35.24], type:"cultural", tags:{kind:"historic",indoor:"mixed"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"חפירות ארכיאולוגיות ומנהרת מים תת-קרקעית שאפשר לעבור בה ברגליים רטובות."},
+    {id:"haifa-submarine-museum", name:"מוזיאון הצוללות חיפה", region:"haifa", coords:[32.83,34.99], type:"cultural", tags:{kind:"museum",indoor:"mixed"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"צוללת אמיתית לטיפוס ותערוכה על תולדות חיל הים הישראלי."},
+    {id:"akko-prisoners", name:"מוזיאון האסירים, עכו", region:"north", coords:[32.92,35.07], type:"cultural", tags:{kind:"historic",indoor:"mixed"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"מבצר עות'מאני ובריטי לשעבר, מספר את סיפור המחתרות לפני קום המדינה."},
+    {id:"holon-childrens-museum", name:"מוזיאון הילדים חולון", region:"center", coords:[32.02,34.78], type:"cultural", tags:{kind:"museum",indoor:"indoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"תערוכות חוויתיות בחושך מוחלט ובדממה, מלוות במדריכים בעלי מוגבלויות."},
+    {id:"gesher-theater", name:"הצגת ילדים בתיאטרון גשר", region:"center", coords:[32.08,34.77], type:"cultural", tags:{kind:"show",indoor:"indoor"}, ages:["toddlers","kids"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"הצגות ילדים איכותיות באולם מרכזי, כדאי להזמין כרטיסים מראש."},
+    {id:"beer-sheva-bedouin-museum", name:"מוזיאון התרבות הבדואית", region:"south", coords:[31.25,34.79], type:"cultural", tags:{kind:"museum",indoor:"indoor"}, ages:["kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium"], desc:"תערוכה על אורח החיים המסורתי של הבדואים בנגב, כולל אוהל מוצג לדוגמה."},
+
+    // ===== ADVENTURE =====
+    {id:"ropepark-golan", name:"פארק החבלים כרמים", region:"north", coords:[33.02,35.68], type:"adventure", tags:{kind:"rope",indoor:"outdoor",difficulty:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"מסלולי חבלים בין העצים בגבהים משתנים, כולל מסלול קל לילדים קטנים."},
+    {id:"kayak-jordan", name:"קיאקים בנחל הירדן", region:"north", coords:[32.83,35.62], type:"adventure", tags:{kind:"water",indoor:"outdoor",difficulty:"easy"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"שיט קיאקים משפחתי במים שקטים, פופולרי במיוחד בקיץ."},
+    {id:"waterpark-yamit", name:"פארק מים ימית 2000", region:"sharon", coords:[32.32,34.87], type:"adventure", tags:{kind:"water",indoor:"outdoor",difficulty:"easy"}, ages:["toddlers","kids","teens"], budget:"high", stroller:false, dogs:false, group:["small","medium","large"], desc:"מגלשות מים ובריכות לכל הגילאים, יעד קיץ קלאסי למשפחות."},
+    {id:"ropepark-benshemen", name:"פארק החבלים בן שמן", region:"center", coords:[31.95,34.92], type:"adventure", tags:{kind:"rope",indoor:"outdoor",difficulty:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"מסלולי אתגר בין צמרות העצים ביער בן שמן."},
+    {id:"clipnclimb", name:"קיר טיפוס Clip'n Climb", region:"center", coords:[31.96,34.80], type:"adventure", tags:{kind:"climb",indoor:"indoor",difficulty:"easy"}, ages:["toddlers","kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"קירות טיפוס מגוונים באולם מבוקר, מתאים גם למטפסים מתחילים."},
+    {id:"escape-room-ta", name:"חדר בריחה משפחתי תל אביב", region:"center", coords:[32.07,34.78], type:"adventure", tags:{kind:"escape",indoor:"indoor",difficulty:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small"], desc:"חידות ומשימות בזמן קצוב, יש חדרים מותאמים לילדים מגיל 8 ומעלה."},
+    {id:"trampoline-haifa", name:"פארק טרמפולינות חיפה", region:"haifa", coords:[32.79,35.00], type:"adventure", tags:{kind:"trampoline",indoor:"indoor",difficulty:"easy"}, ages:["toddlers","kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"אולם טרמפולינות מקורה עם בורות ספוג ואתגרי קפיצה."},
+    {id:"escape-room-jlm", name:"חדרי בריחה ירושלים", region:"jerusalem", coords:[31.78,35.22], type:"adventure", tags:{kind:"escape",indoor:"indoor",difficulty:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small"], desc:"סדרת חדרים בעלילות שונות במרכז העיר, זמן פתרון כשעה."},
+    {id:"sup-telbaruch", name:"סאפ וקיאקים בחוף תל ברוך", region:"center", coords:[32.12,34.80], type:"adventure", tags:{kind:"water",indoor:"outdoor",difficulty:"easy"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"השכרת ציוד סאפ וקיאק לשעה או יותר בים הפתוח."},
+    {id:"quad-arava", name:"רכיבת אופנועי שטח לילדים", region:"arava", coords:[30.60,35.15], type:"adventure", tags:{kind:"quad",indoor:"outdoor",difficulty:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"מסלול חולות מתוחם עם אופנועי שטח קטנים בליווי מדריך."},
+    {id:"treetop-yarkon", name:"פארק הרפתקאות עצים, גני יהושע", region:"center", coords:[32.10,34.80], type:"adventure", tags:{kind:"rope",indoor:"outdoor",difficulty:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"מסלולי חבלים וזיפליין בין העצים בלב פארק הירקון."},
+    {id:"ropepark-carmel", name:"פארק חבלים בכרמל", region:"haifa", coords:[32.75,35.03], type:"adventure", tags:{kind:"rope",indoor:"outdoor",difficulty:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"מסלולי אתגר בין עצי היער עם נוף פתוח להרי הכרמל."},
+    {id:"climbing-haifa", name:"קיר טיפוס בחיפה", region:"haifa", coords:[32.80,35.00], type:"adventure", tags:{kind:"climb",indoor:"indoor",difficulty:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"אולם טיפוס מקורה עם מסלולים ברמות קושי שונות לילדים ולמבוגרים."},
+    {id:"yesud-hamaala-zipline", name:"יער הזיפליין ביריה", region:"north", coords:[32.99,35.50], type:"adventure", tags:{kind:"rope",indoor:"outdoor",difficulty:"hard"}, ages:["teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"מסלולי זיפליין ארוכים בין צמרות עצי היער, לאמיצים שבמשפחה."},
+    {id:"superland", name:"פארק שעשועים ומים, ראשון לציון", region:"center", coords:[31.97,34.79], type:"adventure", tags:{kind:"trampoline",indoor:"outdoor",difficulty:"easy"}, ages:["toddlers","kids","teens"], budget:"high", stroller:true, dogs:false, group:["small","medium","large"], desc:"פארק שעשועים גדול עם רכבות הרים קלות ואטרקציות מים לחודשי הקיץ."},
+    {id:"escape-haifa", name:"חדר בריחה בחיפה", region:"haifa", coords:[32.82,35.00], type:"adventure", tags:{kind:"escape",indoor:"indoor",difficulty:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small"], desc:"חדרי בריחה עם עלילות ים ונמל, בהתאמה לאופי העיר."},
+
+    // ===== FOOD =====
+    {id:"golan-winery", name:"יקב רמת הגולן - סיור וטעימות", region:"north", coords:[32.98,35.68], type:"food", tags:{kind:"winery",indoor:"mixed"}, ages:["teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"סיור קצר במרתפי היין ולאחריו טעימות מודרכות, כולל אזור פיקניק למשפחה."},
+    {id:"goat-dairy", name:"מחלבת עיזים בגליל", region:"north", coords:[32.95,35.28], type:"food", tags:{kind:"factory",indoor:"mixed"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:true, group:["small","medium"], desc:"פגישה עם העיזים וטעימת גבינות בחווה משפחתית קטנה."},
+    {id:"chocolate-factory", name:"מפעל שוקולד בגליל", region:"north", coords:[32.96,35.49], type:"food", tags:{kind:"factory",indoor:"indoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"סיור קצר בקווי הייצור וסדנת יציקת שוקולד לילדים בסוף הביקור."},
+    {id:"honey-farm", name:"חוות תבלינים ודבש, עמק יזרעאל", region:"north", coords:[32.65,35.33], type:"food", tags:{kind:"farm",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:true, group:["small","medium","large"], desc:"סיור בין כוורות ומטעי תבלינים עם טעימות דבש ותה צמחים."},
+    {id:"apple-picking-golan", name:"מטעי קטיף תפוחים בגולן", region:"north", coords:[33.05,35.75], type:"food", tags:{kind:"pickyourown",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:true, group:["small","medium","large"], desc:"קטיף עצמי בעונת הסתיו, פעילות משפחתית פשוטה ומספקת."},
+    {id:"strawberry-sharon", name:"מטע קטיף תותים, עמק חפר", region:"sharon", coords:[32.35,34.92], type:"food", tags:{kind:"pickyourown",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:true, group:["small","medium","large"], desc:"קטיף תותים עצמי בעונת החורף-אביב, אהוב במיוחד על הקטנים."},
+    {id:"carmel-market", name:"שוק הכרמל - סיור טעימות", region:"center", coords:[32.07,34.77], type:"food", tags:{kind:"market",indoor:"mixed"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"הליכה בין דוכני השוק עם עצירות טעימה במקומות נבחרים."},
+    {id:"machane-yehuda", name:"שוק מחנה יהודה", region:"jerusalem", coords:[31.78,35.21], type:"food", tags:{kind:"market",indoor:"mixed"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"שוק תוסס עם דוכני אוכל, מאפים ומוזיקה חיה בשעות אחר הצהריים."},
+    {id:"judean-winery", name:"יקב בהרי יהודה - סיור משפחות", region:"jerusalem", coords:[31.75,35.05], type:"food", tags:{kind:"winery",indoor:"mixed"}, ages:["teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"יקב בוטיק עם נוף להרים ופינת משחקים לילדים בזמן טעימות ההורים."},
+    {id:"ramat-negev-winery", name:"יקב ברמת הנגב", region:"south", coords:[31.00,34.75], type:"food", tags:{kind:"winery",indoor:"mixed"}, ages:["teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"יקב מדברי עם טעימות ונוף כותנה ירוק באמצע הנגב הצחיח."},
+    {id:"date-farm-arava", name:"חוות תמרים בערבה", region:"arava", coords:[30.30,35.15], type:"food", tags:{kind:"pickyourown",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:true, group:["small","medium","large"], desc:"סיור בין מטעי דקלים וטעימת תמרים טריים היישר מהעץ."},
+    {id:"upper-galilee-cheese", name:"מחלבת גבינות בגליל העליון", region:"north", coords:[33.13,35.57], type:"food", tags:{kind:"factory",indoor:"indoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium"], desc:"מחלבה בוטיקית עם הדגמת ייצור גבינות וטעימות בסוף הסיור."},
+    {id:"jaffa-flea-market", name:"שוק הפשפשים יפו", region:"center", coords:[32.05,34.75], type:"food", tags:{kind:"market",indoor:"mixed"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"סמטאות עתיקות עם דוכני אוכל, בתי קפה קטנים ואומנות רחוב."},
+    {id:"citrus-picking-sharon", name:"מטע קטיף הדרים בשרון", region:"sharon", coords:[32.28,34.90], type:"food", tags:{kind:"pickyourown",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:true, group:["small","medium","large"], desc:"קטיף תפוזים ואשכוליות עצמי בעונת החורף, כולל סחיטת מיץ טרי."},
+
+    // ===== WORKSHOPS =====
+    {id:"ceramics-ta", name:"סדנת קרמיקה משפחתית", region:"center", coords:[32.08,34.78], type:"workshop", tags:{kind:"ceramics",duration:"short"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"יצירה על גלגל חרס או בעבודת יד, כולל שריפה ואיסוף בהמשך."},
+    {id:"pizza-workshop", name:"סדנת פיצות לילדים", region:"center", coords:[32.06,34.80], type:"workshop", tags:{kind:"cooking",duration:"short"}, ages:["toddlers","kids"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"גלגול בצק ובחירת תוספות, ואז אפייה ואכילה באותו מפגש."},
+    {id:"chocolate-workshop-tzfat", name:"סדנת שוקולד בצפת", region:"north", coords:[32.96,35.50], type:"workshop", tags:{kind:"cooking",duration:"short"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"יציקת ועיטור פרלינים בסדנה קטנה בעיר העתיקה."},
+    {id:"art-museum-workshop", name:"סדנת אמנות במוזיאון תל אביב", region:"center", coords:[32.08,34.79], type:"workshop", tags:{kind:"art",duration:"short"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"סיור קצר בגלריה ואחריו יצירה בהשראת התערוכה הנוכחית."},
+    {id:"technoda", name:"סדנת מדע בטכנודע חולון", region:"center", coords:[32.02,34.78], type:"workshop", tags:{kind:"science",duration:"long"}, ages:["kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"ניסויים מודרכים לצד תערוכות מדע אינטראקטיביות למגע."},
+    {id:"candle-workshop-tzfat", name:"סדנת נרות בצפת", region:"north", coords:[32.965,35.495], type:"workshop", tags:{kind:"art",duration:"short"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"יציקת נרות צבעוניים בסגנון המסורתי של הרובע האמנים."},
+    {id:"robotics-sharon", name:"סדנת רובוטיקה לילדים", region:"sharon", coords:[32.19,34.87], type:"workshop", tags:{kind:"science",duration:"short"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"הרכבה ותכנות בסיסי של רובוט קטן במפגש קבוצתי קצר."},
+    {id:"yemeni-cooking-jlm", name:"סדנת בישול תימני בירושלים", region:"jerusalem", coords:[31.78,35.22], type:"workshop", tags:{kind:"cooking",duration:"long"}, ages:["teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"הכנת ג'חנון ומאפים תימניים מסורתיים בליווי מארחת מקומית."},
+    {id:"italian-cooking-ta", name:"סדנת בישול איטלקי משפחתית", region:"center", coords:[32.06,34.78], type:"workshop", tags:{kind:"cooking",duration:"long"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"הכנת פסטה טרייה מאפס יחד עם ההורים, כולל ארוחה משותפת בסיום."},
+    {id:"nature-art-galilee", name:"סדנת ציור בטבע בגליל", region:"north", coords:[32.93,35.30], type:"workshop", tags:{kind:"art",duration:"short"}, ages:["toddlers","kids","teens"], budget:"low", stroller:false, dogs:true, group:["small","medium"], desc:"ציור בחוץ בהשראת הנוף, עם חומרים המתאימים גם לידיים קטנות."},
+    {id:"beer-sheva-science", name:"סדנת מדע במוזיאון המדע באר שבע", region:"south", coords:[31.25,34.80], type:"workshop", tags:{kind:"science",duration:"long"}, ages:["kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"ניסויים ותערוכות אינטראקטיביות בתחומי פיזיקה ואקולוגיה מדברית."},
+    {id:"animal-workshop-jlm", name:"סדנת בעלי חיים בחוות לימוד", region:"jerusalem", coords:[31.80,35.15], type:"workshop", tags:{kind:"nature",duration:"short"}, ages:["toddlers","kids"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"מפגש מקרוב עם בעלי חיים משק ולמידה על טיפול וגידול."},
+
+    // ===== EXPERIENCES =====
+    {id:"glamping-ramon", name:"גלמפינג במכתש רמון", region:"south", coords:[30.60,34.82], type:"experience", tags:{kind:"glamping",duration:"overnight"}, ages:["kids","teens"], budget:"high", stroller:false, dogs:true, group:["small","medium"], desc:"אוהלי בד מאובזרים על שפת המכתש, שילוב של קמפינג ונוחות מלונאית."},
+    {id:"jeep-ramon", name:"טיול ג'יפים במכתש רמון", region:"south", coords:[30.61,34.81], type:"experience", tags:{kind:"jeep",duration:"half"}, ages:["kids","teens"], budget:"high", stroller:false, dogs:false, group:["small","medium","large"], desc:"נסיעה מודרכת בשבילי עפר עם עצירות תצפית והסבר גיאולוגי."},
+    {id:"camel-judean-desert", name:"רכיבת גמלים במדבר יהודה", region:"arava", coords:[31.40,35.35], type:"experience", tags:{kind:"camel",duration:"half"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"רכיבה קצרה בין הרי המדבר, לרוב בשילוב עצירה לשתייה חמה באוהל בדואי."},
+    {id:"kinneret-boat", name:"שייט בכנרת", region:"north", coords:[32.83,35.60], type:"experience", tags:{kind:"boat",duration:"half"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"שיט רגוע על הכנרת באונייה גדולה, כולל מוזיקה ונוף לגולן."},
+    {id:"bedouin-overnight", name:"לינה באוהלים בדואים בנגב", region:"south", coords:[30.90,34.85], type:"experience", tags:{kind:"overnight",duration:"overnight"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"לינה פשוטה באוהל מסורתי עם ארוחה מקומית וסיפורי מדבר סביב מדורה."},
+    {id:"jeep-golan", name:"טיול ג'יפים ברמת הגולן", region:"north", coords:[33.05,35.75], type:"experience", tags:{kind:"jeep",duration:"full"}, ages:["kids","teens"], budget:"high", stroller:false, dogs:false, group:["small","medium","large"], desc:"מסלול יום מלא בין נחלים, יערות ותצפיות גבול עם מדריך מקומי."},
+    {id:"ranch-day-galilee", name:"יום בוקרים בחוות סוסים בגליל", region:"north", coords:[32.90,35.30], type:"experience", tags:{kind:"camel",duration:"full"}, ages:["kids","teens"], budget:"high", stroller:false, dogs:true, group:["small","medium"], desc:"יום שלם בחוות בוקרים עם רכיבה, סדנת לאסו וארוחת שטח."},
+    {id:"sunset-cruise-tlv", name:"שייט שקיעה מנמל תל אביב", region:"center", coords:[32.10,34.77], type:"experience", tags:{kind:"boat",duration:"half"}, ages:["kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"שיט קצר לאורך החוף בשעת השקיעה, אווירה נעימה לכל המשפחה."},
+    {id:"camping-benshemen", name:"קמפינג משפחתי ביער בן שמן", region:"center", coords:[31.94,34.91], type:"experience", tags:{kind:"overnight",duration:"overnight"}, ages:["kids","teens"], budget:"free", stroller:false, dogs:true, group:["small","medium","large"], desc:"שטח קמפינג מוסדר בתוך היער, פופולרי לחופשות קצרות בטבע קרוב לבית."},
+    {id:"jeep-arava", name:"טיול ג'יפים בערבה", region:"arava", coords:[30.40,35.10], type:"experience", tags:{kind:"jeep",duration:"half"}, ages:["kids","teens"], budget:"high", stroller:false, dogs:false, group:["small","medium","large"], desc:"נסיעה בין מכתשים קטנים ותצורות סלע מדבריות, עם עצירות תצפית."},
+    {id:"bedouin-arad", name:"לינה בכפר בדואי ליד ערד", region:"south", coords:[31.25,35.15], type:"experience", tags:{kind:"overnight",duration:"overnight"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"אירוח מסורתי עם ארוחה בדואית וסיפורי מדבר לאור המדורה."},
+    {id:"akko-fishing-boat", name:"שייט דייגים בעכו", region:"north", coords:[32.92,35.06], type:"experience", tags:{kind:"boat",duration:"half"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium"], desc:"שיט קצר בנמל העתיק עם סיפורים על חיי הדייגים המקומיים."},
+    {id:"horseback-sharon", name:"רכיבת סוסים בחוף השרון", region:"sharon", coords:[32.30,34.85], type:"experience", tags:{kind:"camel",duration:"half"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"רכיבה מודרכת על חוף הים בשקיעה, מתאים גם לרוכבים מתחילים."},
+    {id:"glamping-galilee", name:"גלמפינג בגליל העליון", region:"north", coords:[33.03,35.45], type:"experience", tags:{kind:"glamping",duration:"overnight"}, ages:["kids","teens"], budget:"high", stroller:false, dogs:true, group:["small","medium"], desc:"אוהלי יוקרה בין הרי הגליל עם נוף פתוח וארוחת בוקר כפרית."}
+  ];
+
+  const LS_CUSTOM = "family-activities-custom-v2";
+  const LS_FAV = "family-activities-favorites-v2";
+
+  function loadCustom(){ try{ return JSON.parse(localStorage.getItem(LS_CUSTOM)) || []; }catch(e){ return []; } }
+  function saveCustom(list){ try{ localStorage.setItem(LS_CUSTOM, JSON.stringify(list)); }catch(e){} }
+  function loadFavs(){ try{ return JSON.parse(localStorage.getItem(LS_FAV)) || []; }catch(e){ return []; } }
+  function saveFavs(list){ try{ localStorage.setItem(LS_FAV, JSON.stringify(list)); }catch(e){} }
+
+  let customActivities = loadCustom();
+  let favorites = loadFavs();
+  function allActivities(){ return BASE_ACTIVITIES.concat(customActivities); }
+
+  function distanceKm(lat1,lon1,lat2,lon2){
+    const R=6371;
+    const dLat=(lat2-lat1)*Math.PI/180, dLon=(lon2-lon1)*Math.PI/180;
+    const a=Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+  }
+
+  const state = {
+    locationMode:null, regions:[], userCoords:null, radius:50,
+    type:null, subcat:{}, global:{ages:[],budget:[],group:[]}, strollerOnly:false, dogsOnly:false,
+    view:"list"
+  };
+
+  // ---------- STEP 1: LOCATION ----------
+  const locModeButtons = document.getElementById("location-mode-buttons");
+  const regionPicker = document.getElementById("region-picker");
+  const regionButtons = document.getElementById("region-buttons");
+  const gpsPicker = document.getElementById("gps-picker");
+  const gpsStatus = document.getElementById("gps-status");
+  const radiusPicker = document.getElementById("radius-picker");
+  const radiusButtons = document.getElementById("radius-buttons");
+
+  [["region","לפי אזור בארץ"],["gps","לפי המיקום שלי"]].forEach(([val,label])=>{
+    const b = document.createElement("button");
+    b.className = "opt-btn"; b.textContent = label;
+    b.addEventListener("click", ()=>{
+      state.locationMode = val; state.regions = []; state.userCoords = null;
+      [...locModeButtons.children].forEach(c=>c.classList.remove("active"));
+      b.classList.add("active");
+      regionPicker.style.display = val==="region" ? "block" : "none";
+      gpsPicker.style.display = val==="gps" ? "block" : "none";
+      radiusPicker.style.display = "none"; gpsStatus.textContent = "";
+      document.getElementById("step-type").style.display = "block";
+      renderResults();
+    });
+    locModeButtons.appendChild(b);
+  });
+
+  Object.entries(REGIONS).forEach(([val,label])=>{
+    const b = document.createElement("button");
+    b.className = "opt-btn"; b.textContent = label;
+    b.addEventListener("click", ()=>{
+      const idx = state.regions.indexOf(val);
+      if(idx === -1){ state.regions.push(val); b.classList.add("active"); }
+      else { state.regions.splice(idx,1); b.classList.remove("active"); }
+      renderResults();
+    });
+    regionButtons.appendChild(b);
+  });
+
+  document.getElementById("gps-locate-btn").addEventListener("click", ()=>{
+    if(!navigator.geolocation){ gpsStatus.textContent = "הדפדפן לא תומך באיתור מיקום."; return; }
+    gpsStatus.textContent = "מאתר מיקום…";
+    navigator.geolocation.getCurrentPosition(
+      (pos)=>{
+        state.userCoords = [pos.coords.latitude, pos.coords.longitude];
+        gpsStatus.textContent = "המיקום אותר ✓";
+        radiusPicker.style.display = "block";
+        renderResults();
+      },
+      ()=>{ gpsStatus.textContent = "לא הצלחנו לאתר מיקום. אפשר לבחור אזור בארץ במקום."; }
+    );
+  });
+
+  [10,25,50,100,200].forEach(km=>{
+    const b = document.createElement("button");
+    b.className = "opt-btn" + (km===50 ? " active" : "");
+    b.textContent = "עד " + km + ' ק"מ';
+    b.addEventListener("click", ()=>{
+      state.radius = km;
+      [...radiusButtons.children].forEach(c=>c.classList.remove("active"));
+      b.classList.add("active");
+      renderResults();
+    });
+    radiusButtons.appendChild(b);
+  });
+
+  // ---------- STEP 2: TYPE ----------
+  const typeButtonsEl = document.getElementById("type-buttons");
+  Object.entries(TYPES).forEach(([val,info])=>{
+    const b = document.createElement("button");
+    b.className = "type-btn";
+    b.innerHTML = '<span class="ic">'+info.icon+'</span><span class="lbl">'+info.label+'</span>';
+    b.addEventListener("click", ()=>{
+      state.type = val; state.subcat = {};
+      QUESTIONS[val].forEach(q=>{ state.subcat[q.key] = []; });
+      [...typeButtonsEl.children].forEach(c=>c.classList.remove("active"));
+      b.classList.add("active");
+      document.getElementById("step-subcat").style.display = "block";
+      renderSubcatQuestions();
+      renderGlobalFilters();
+      renderResults();
+    });
+    typeButtonsEl.appendChild(b);
+  });
+
+  // ---------- MULTI-SELECT TOGGLE HELPER ----------
+  function multiToggleGroup(container, keyArrRef, options, onChange){
+    options.forEach(([val,text])=>{
+      const b = document.createElement("button");
+      b.className = "opt-btn";
+      b.textContent = text;
+      b.addEventListener("click", ()=>{
+        const idx = keyArrRef().indexOf(val);
+        if(idx === -1){ keyArrRef().push(val); b.classList.add("active"); }
+        else { keyArrRef().splice(idx,1); b.classList.remove("active"); }
+        onChange();
+      });
+      container.appendChild(b);
+    });
+  }
+
+  // ---------- STEP 3: SUBCATEGORIES ----------
+  function renderSubcatQuestions(){
+    const wrap = document.getElementById("subcat-questions");
+    wrap.innerHTML = "";
+    document.getElementById("subcat-title").textContent = TYPES[state.type].label + " — עוד כמה פרטים";
+    QUESTIONS[state.type].forEach(q=>{
+      const group = document.createElement("div"); group.className = "subcat-group";
+      const lbl = document.createElement("div"); lbl.className = "qlabel"; lbl.textContent = q.label + " (אפשר לבחור כמה)";
+      group.appendChild(lbl);
+      const grid = document.createElement("div"); grid.className = "btn-grid";
+      multiToggleGroup(grid, ()=>state.subcat[q.key], q.options, renderResults);
+      group.appendChild(grid);
+      wrap.appendChild(group);
+    });
+  }
+
+  // ---------- GLOBAL FILTERS ----------
+  function renderGlobalFilters(){
+    const wrap = document.getElementById("global-filters");
+    wrap.innerHTML = "";
+    state.global = {ages:[],budget:[],group:[]};
+    state.strollerOnly = false; state.dogsOnly = false;
+
+    GLOBAL_MULTI.forEach(q=>{
+      const group = document.createElement("div"); group.className = "subcat-group";
+      const lbl = document.createElement("div"); lbl.className = "qlabel"; lbl.textContent = q.label;
+      group.appendChild(lbl);
+      const grid = document.createElement("div"); grid.className = "btn-grid";
+      multiToggleGroup(grid, ()=>state.global[q.key], q.options, renderResults);
+      group.appendChild(grid);
+      wrap.appendChild(group);
+    });
+
+    const strollerRow = document.createElement("div"); strollerRow.className = "check-row";
+    strollerRow.innerHTML = '<input type="checkbox" id="filter-stroller"><label for="filter-stroller">רק מקומות נגישים לעגלה / כיסא גלגלים</label>';
+    wrap.appendChild(strollerRow);
+    strollerRow.querySelector("input").addEventListener("change", (e)=>{ state.strollerOnly = e.target.checked; renderResults(); });
+
+    const dogsRow = document.createElement("div"); dogsRow.className = "check-row";
+    dogsRow.innerHTML = '<input type="checkbox" id="filter-dogs"><label for="filter-dogs">רק מקומות ידידותיים לכלבים</label>';
+    wrap.appendChild(dogsRow);
+    dogsRow.querySelector("input").addEventListener("change", (e)=>{ state.dogsOnly = e.target.checked; renderResults(); });
+  }
+
+  // ---------- VIEW TOGGLE (list / map) ----------
+  const viewToggleEl = document.getElementById("view-toggle");
+  [["list","📋 רשימה"],["map","🗺️ מפה"]].forEach(([val,label])=>{
+    const b = document.createElement("button");
+    b.className = "opt-btn" + (val==="list" ? " active" : "");
+    b.textContent = label;
+    b.addEventListener("click", ()=>{
+      state.view = val;
+      [...viewToggleEl.children].forEach(c=>c.classList.remove("active"));
+      b.classList.add("active");
+      document.getElementById("map-wrap").style.display = val==="map" ? "block" : "none";
+      document.getElementById("results-list").style.display = val==="list" ? "block" : "none";
+      if(val==="map") renderMap(currentResults);
+    });
+    viewToggleEl.appendChild(b);
+  });
+
+  // ---------- FILTER LOGIC ----------
+  function matchesLocation(a){
+    if(state.locationMode === "region"){ if(state.regions.length === 0) return true; return state.regions.includes(a.region); }
+    if(state.locationMode === "gps"){
+      if(!state.userCoords || !a.coords) return true;
+      return distanceKm(state.userCoords[0], state.userCoords[1], a.coords[0], a.coords[1]) <= state.radius;
+    }
+    return true;
+  }
+  function activityDistance(a){
+    if(state.locationMode === "gps" && state.userCoords && a.coords) return distanceKm(state.userCoords[0], state.userCoords[1], a.coords[0], a.coords[1]);
+    return null;
+  }
+  function matchesSubcat(a){
+    if(a.type !== state.type) return false;
+    return QUESTIONS[state.type].every(q=>{
+      const chosen = state.subcat[q.key] || [];
+      if(chosen.length === 0) return true;
+      return chosen.includes(a.tags[q.key]);
+    });
+  }
+  function matchesGlobal(a){
+    if(state.global.ages.length && !(a.ages||[]).some(v=>state.global.ages.includes(v))) return false;
+    if(state.global.budget.length && !state.global.budget.includes(a.budget)) return false;
+    if(state.global.group.length && !(a.group||[]).some(v=>state.global.group.includes(v))) return false;
+    if(state.strollerOnly && !a.stroller) return false;
+    if(state.dogsOnly && !a.dogs) return false;
+    return true;
+  }
+  function tagLabel(type, key, val){
+    const q = QUESTIONS[type].find(q=>q.key===key);
+    if(!q) return val;
+    const opt = q.options.find(o=>o[0]===val);
+    return opt ? opt[1] : val;
+  }
+
+  let currentResults = [];
+
+  function renderResults(){
+    const section = document.getElementById("results-section");
+    if(!state.type){ section.style.display = "none"; return; }
+    section.style.display = "block";
+
+    let list = allActivities().filter(a=> matchesLocation(a) && matchesSubcat(a) && matchesGlobal(a));
+    if(state.locationMode === "gps" && state.userCoords){
+      list = list.map(a=>({a, d:activityDistance(a)})).sort((x,y)=> x.d - y.d).map(x=>x.a);
+    }
+    currentResults = list;
+
+    document.getElementById("results-count").textContent = list.length ? ("נמצאו " + list.length + " פעילויות מתאימות") : "";
+
+    const listEl = document.getElementById("results-list");
+    listEl.innerHTML = "";
+    if(list.length === 0){
+      const p = document.createElement("p"); p.className = "empty-note";
+      p.textContent = "לא נמצאו פעילויות בהתאמה מלאה — נסו להסיר סינון אחד, או להוסיף פעילות משלכם.";
+      listEl.appendChild(p);
+    } else {
+      list.forEach(a=> listEl.appendChild(activityCard(a)));
+    }
+    if(state.view === "map") renderMap(list);
+  }
+
+  function metaIconsRow(a){
+    const bits = [];
+    if(a.stroller) bits.push("♿ נגיש לעגלה/כ.גלגלים");
+    if(a.dogs) bits.push("🐕 ידידותי לכלבים");
+    if(a.budget === "free") bits.push("חינם");
+    else if(a.budget === "low") bits.push("₪ עלות מתונה");
+    else if(a.budget === "high") bits.push("₪₪ יקר יותר");
+    return bits;
+  }
+
+  function activityCard(a){
+    const div = document.createElement("div");
+    div.className = "activity type-" + a.type;
+    div.id = "card-" + a.id;
+
+    const top = document.createElement("div"); top.className = "a-top";
+    const h3 = document.createElement("h3"); h3.textContent = a.name;
+    const reg = document.createElement("span"); reg.className = "region-tag"; reg.textContent = REGIONS[a.region] || "";
+    top.appendChild(h3); top.appendChild(reg);
+    div.appendChild(top);
+
+    if(a.desc){ const p = document.createElement("p"); p.className = "desc"; p.textContent = a.desc; div.appendChild(p); }
+
+    const tagsWrap = document.createElement("div"); tagsWrap.className = "tags";
+    Object.entries(a.tags||{}).forEach(([k,v])=>{
+      const t = document.createElement("span"); t.className = "tag"; t.textContent = tagLabel(a.type, k, v);
+      tagsWrap.appendChild(t);
+    });
+    div.appendChild(tagsWrap);
+
+    const meta = metaIconsRow(a);
+    if(meta.length){
+      const metaEl = document.createElement("div"); metaEl.className = "meta-icons";
+      meta.forEach(m=>{ const s = document.createElement("span"); s.textContent = m; metaEl.appendChild(s); });
+      div.appendChild(metaEl);
+    }
+
+    const bottom = document.createElement("div"); bottom.className = "a-bottom";
+    const leftBit = document.createElement("span");
+    const d = activityDistance(a);
+    if(d !== null){ leftBit.className = "dist-tag"; leftBit.textContent = "כ-" + Math.round(d) + ' ק"מ ממך'; }
+    else if(a.custom){
+      const delBtn = document.createElement("button"); delBtn.className = "del-btn"; delBtn.textContent = "מחיקה";
+      delBtn.addEventListener("click", ()=>{
+        customActivities = customActivities.filter(c=>c.id!==a.id);
+        saveCustom(customActivities);
+        favorites = favorites.filter(id=>id!==a.id);
+        saveFavs(favorites);
+        renderResults(); renderFavorites();
+      });
+      leftBit.appendChild(delBtn);
+    }
+    const favBtn = document.createElement("button"); favBtn.className = "fav-btn";
+    const isFav = favorites.includes(a.id);
+    favBtn.textContent = isFav ? "★" : "☆";
+    favBtn.title = isFav ? "הסרה מהשמורים" : "שמירה למועדפים";
+    favBtn.addEventListener("click", ()=>{
+      if(favorites.includes(a.id)){ favorites = favorites.filter(id=>id!==a.id); } else { favorites.push(a.id); }
+      saveFavs(favorites);
+      favBtn.textContent = favorites.includes(a.id) ? "★" : "☆";
+      renderFavorites();
+    });
+    bottom.appendChild(leftBit); bottom.appendChild(favBtn);
+    div.appendChild(bottom);
+    return div;
+  }
+
+  document.getElementById("reset-btn").addEventListener("click", ()=>{
+    state.locationMode = null; state.regions = []; state.userCoords = null; state.radius = 50;
+    state.type = null; state.subcat = {}; state.global = {ages:[],budget:[],group:[]};
+    state.strollerOnly = false; state.dogsOnly = false; state.view = "list";
+    [...locModeButtons.children].forEach(c=>c.classList.remove("active"));
+    [...regionButtons.children].forEach(c=>c.classList.remove("active"));
+    [...typeButtonsEl.children].forEach(c=>c.classList.remove("active"));
+    [...viewToggleEl.children].forEach((c,i)=>c.classList.toggle("active", i===0));
+    regionPicker.style.display = "none"; gpsPicker.style.display = "none"; radiusPicker.style.display="none";
+    gpsStatus.textContent = "";
+    document.getElementById("step-type").style.display = "none";
+    document.getElementById("step-subcat").style.display = "none";
+    document.getElementById("map-wrap").style.display = "none";
+    document.getElementById("results-list").style.display = "block";
+    renderResults();
+  });
+
+  // ---------- SCHEMATIC MAP ----------
+  const LON_MIN=34.2, LON_MAX=36.0, LAT_MIN=29.4, LAT_MAX=33.4, MAP_W=260, MAP_H=580;
+  function project(lon,lat){
+    return { x:(lon-LON_MIN)/(LON_MAX-LON_MIN)*MAP_W, y:(LAT_MAX-lat)/(LAT_MAX-LAT_MIN)*MAP_H };
+  }
+  const BORDER = [
+    [35.10,33.09],[35.07,32.93],[34.99,32.79],[34.95,32.60],[34.86,32.33],[34.78,32.08],
+    [34.65,31.80],[34.57,31.67],[34.50,31.40],[34.49,31.25],[34.66,31.00],[34.95,29.55],
+    [35.40,30.95],[35.50,31.30],[35.55,31.75],[35.55,32.15],[35.55,32.47],[35.65,32.70],
+    [35.78,32.90],[35.80,33.13],[35.80,33.27],[35.57,33.28],[35.10,33.09]
+  ];
+
+  function renderMap(list){
+    const container = document.getElementById("map-container");
+    const pts = BORDER.map(([lon,lat])=>{ const p=project(lon,lat); return p.x.toFixed(1)+","+p.y.toFixed(1); }).join(" ");
+    let markers = "";
+    list.forEach(a=>{
+      if(!a.coords) return;
+      const p = project(a.coords[1], a.coords[0]);
+      const color = TYPES[a.type].color;
+      markers += '<g class="map-dot" data-id="'+a.id+'" transform="translate('+p.x.toFixed(1)+','+p.y.toFixed(1)+')">'+
+        '<circle r="5.5" fill="'+color+'" stroke="var(--card)" stroke-width="1.5"><title>'+a.name+'</title></circle>'+
+        '</g>';
+    });
+    container.innerHTML =
+      '<svg viewBox="0 0 '+MAP_W+' '+MAP_H+'" xmlns="http://www.w3.org/2000/svg">'+
+      '<polygon points="'+pts+'" fill="var(--stone-line)" fill-opacity="0.5" stroke="var(--olive)" stroke-width="1.2"/>'+
+      markers+
+      '</svg>';
+    container.querySelectorAll(".map-dot").forEach(dot=>{
+      dot.addEventListener("click", ()=>{
+        const id = dot.getAttribute("data-id");
+        document.getElementById("view-toggle").children[0].click();
+        const card = document.getElementById("card-"+id);
+        if(card){
+          card.scrollIntoView({behavior:"smooth", block:"center"});
+          card.classList.remove("flash"); void card.offsetWidth; card.classList.add("flash");
+        }
+      });
+    });
+
+    const legend = document.getElementById("map-legend");
+    legend.innerHTML = "";
+    const usedTypes = [...new Set(list.map(a=>a.type))];
+    usedTypes.forEach(t=>{
+      const span = document.createElement("span");
+      span.innerHTML = '<i style="background:'+TYPES[t].color+'"></i>'+TYPES[t].label;
+      legend.appendChild(span);
+    });
+  }
+
+  // ---------- FAVORITES ----------
+  function renderFavorites(){
+    const favEl = document.getElementById("fav-list");
+    const countEl = document.getElementById("fav-count");
+    const items = allActivities().filter(a=> favorites.includes(a.id));
+    countEl.textContent = items.length;
+    favEl.innerHTML = "";
+    if(items.length === 0){
+      const p = document.createElement("p"); p.className = "empty-note";
+      p.textContent = "עדיין לא שמרתם פעילויות. לוחצים על הכוכב ליד כל פעילות כדי לשמור אותה כאן.";
+      favEl.appendChild(p);
+      return;
+    }
+    items.forEach(a=> favEl.appendChild(activityCard(a)));
+  }
+
+  // ---------- ADD CUSTOM ACTIVITY ----------
+  const cfRegion = document.getElementById("cf-region");
+  Object.entries(REGIONS).forEach(([val,label])=>{ const o = document.createElement("option"); o.value = val; o.textContent = label; cfRegion.appendChild(o); });
+
+  const cfType = document.getElementById("cf-type");
+  Object.entries(TYPES).forEach(([val,info])=>{ const o = document.createElement("option"); o.value = val; o.textContent = info.icon+" "+info.label; cfType.appendChild(o); });
+
+  const cfSubcats = document.getElementById("cf-subcats");
+  function renderCfSubcats(){
+    cfSubcats.innerHTML = "";
+    const type = cfType.value;
+    QUESTIONS[type].forEach(q=>{
+      const row = document.createElement("div"); row.className = "form-row";
+      const lbl = document.createElement("label"); lbl.textContent = q.label;
+      const sel = document.createElement("select"); sel.dataset.key = q.key;
+      q.options.forEach(([val,text])=>{ const o = document.createElement("option"); o.value = val; o.textContent = text; sel.appendChild(o); });
+      row.appendChild(lbl); row.appendChild(sel);
+      cfSubcats.appendChild(row);
+    });
+    const ageRow = document.createElement("div"); ageRow.className = "form-row";
+    ageRow.innerHTML = '<label>מתאים לגילאים</label>';
+    const ageWrap = document.createElement("div"); ageWrap.className = "btn-grid"; ageWrap.dataset.role = "cf-ages";
+    GLOBAL_MULTI[0].options.forEach(([val,text])=>{
+      const b = document.createElement("button"); b.type="button"; b.className = "opt-btn"; b.textContent = text; b.dataset.val = val;
+      b.addEventListener("click", ()=> b.classList.toggle("active"));
+      ageWrap.appendChild(b);
+    });
+    ageRow.appendChild(ageWrap); cfSubcats.appendChild(ageRow);
+
+    const budgetRow = document.createElement("div"); budgetRow.className = "form-row";
+    budgetRow.innerHTML = '<label>תקציב</label>';
+    const budgetSel = document.createElement("select"); budgetSel.dataset.role = "cf-budget";
+    [["free","חינם"],["low","עלות מתונה"],["high","יקר יותר"]].forEach(([val,text])=>{ const o=document.createElement("option"); o.value=val; o.textContent=text; budgetSel.appendChild(o); });
+    budgetRow.appendChild(budgetSel); cfSubcats.appendChild(budgetRow);
+
+    const boolRow = document.createElement("div"); boolRow.className = "form-row";
+    boolRow.innerHTML =
+      '<div class="check-row"><input type="checkbox" id="cf-stroller"><label for="cf-stroller">נגיש לעגלה / כיסא גלגלים</label></div>'+
+      '<div class="check-row"><input type="checkbox" id="cf-dogs"><label for="cf-dogs">ידידותי לכלבים</label></div>';
+    cfSubcats.appendChild(boolRow);
+  }
+  cfType.addEventListener("change", renderCfSubcats);
+  renderCfSubcats();
+
+  document.getElementById("cf-save").addEventListener("click", ()=>{
+    const name = document.getElementById("cf-name").value.trim();
+    if(!name){ document.getElementById("cf-name").focus(); return; }
+    const type = cfType.value;
+    const tags = {};
+    cfSubcats.querySelectorAll("select[data-key]").forEach(sel=>{ tags[sel.dataset.key] = sel.value; });
+    const ages = [...cfSubcats.querySelectorAll('[data-role="cf-ages"] .opt-btn.active')].map(b=>b.dataset.val);
+    const budget = cfSubcats.querySelector('[data-role="cf-budget"]').value;
+    const stroller = document.getElementById("cf-stroller").checked;
+    const dogs = document.getElementById("cf-dogs").checked;
+    const newActivity = {
+      id: "custom-" + Date.now(), name, region: cfRegion.value, type, tags,
+      ages, budget, stroller, dogs, group:["small","medium","large"],
+      desc: document.getElementById("cf-desc").value.trim(), custom: true
+    };
+    customActivities.push(newActivity);
+    saveCustom(customActivities);
+    document.getElementById("cf-name").value = "";
+    document.getElementById("cf-desc").value = "";
+    document.getElementById("add-form").removeAttribute("open");
+    renderResults(); renderFavorites();
+  });
+
+  renderFavorites();
+})();
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("service-worker.js").catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
