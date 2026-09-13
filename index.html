@@ -123,6 +123,21 @@
   .legend{ display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:8px; font-size:11.5px; color:var(--ink-soft); }
   .legend span{ display:inline-flex; align-items:center; gap:4px; }
   .legend i{ width:9px; height:9px; border-radius:50%; display:inline-block; }
+  .details-link{ background:none; border:none; color:var(--sky); font-family:"Heebo",sans-serif; font-size:13.5px; cursor:pointer; padding:0; text-decoration:underline; align-self:flex-start; }
+  .modal-overlay{ position:fixed; inset:0; background:rgba(20,24,18,0.55); z-index:1000; display:flex; align-items:flex-end; justify-content:center; padding:0; }
+  @media (min-width:700px){ .modal-overlay{ align-items:center; padding:20px; } }
+  .modal-box{ position:relative; background:var(--card); width:100%; max-width:640px; max-height:88vh; overflow-y:auto; border-radius:16px 16px 0 0; padding:24px 20px 28px; }
+  @media (min-width:700px){ .modal-box{ border-radius:16px; } }
+  .modal-close{ position:absolute; top:12px; left:12px; background:var(--stone-line); border:none; width:30px; height:30px; border-radius:50%; font-size:15px; cursor:pointer; color:var(--ink); }
+  .detail-title{ font-size:22px; margin:0 0 4px; padding-inline-end:36px; }
+  .detail-region{ font-size:13.5px; color:var(--ink-soft); margin-bottom:14px; }
+  .detail-section{ margin-bottom:16px; }
+  .detail-section h4{ font-size:13px; color:var(--ink-soft); margin:0 0 6px; font-weight:600; }
+  .detail-desc{ font-size:15px; line-height:1.6; margin:0; }
+  .detail-tags{ display:flex; flex-wrap:wrap; gap:6px; }
+  .detail-contact a{ color:var(--sky); text-decoration:underline; font-size:14.5px; }
+  .detail-contact div{ margin-bottom:6px; }
+  .detail-note{ font-size:12px; color:var(--ink-soft); margin-top:18px; border-top:1px solid var(--line); padding-top:12px; }
   @media (prefers-reduced-motion:no-preference){
     .activity{ animation: rise .28s ease-out; }
     @keyframes rise{ from{ opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
@@ -167,6 +182,7 @@
   <section class="card" id="step-type" style="display:none;">
     <div class="step-row"><span class="blaze" style="--blaze-color:#2b6ea3"></span><span class="stepline"><b>שלב 2</b> · איזה סוג פעילות?</span></div>
     <h2>סוג הפעילות</h2>
+    <p class="hint">אפשר לבחור כמה סוגים בו-זמנית (למשל גם טיול וגם פעילות תרבותית).</p>
     <div class="type-grid" id="type-buttons"></div>
   </section>
 
@@ -188,7 +204,7 @@
     <div class="map-wrap" id="map-wrap" style="display:none;">
       <div id="map-container"></div>
       <div class="legend" id="map-legend"></div>
-      <p class="map-note">מפה סכמטית להתמצאות כללית · לחיצה על נקודה קופצת לכרטיס המתאים</p>
+      <p class="map-note">מפה סכמטית עם ערים להתמצאות (לא תצלום לוויין) · לחיצה על נקודה קופצת לכרטיס המתאים</p>
     </div>
     <div class="results-count" id="results-count"></div>
     <div id="results-list"></div>
@@ -214,6 +230,13 @@
     <div class="form-body" id="fav-list" style="padding-bottom:14px;"></div>
   </details>
 
+</div>
+
+<div class="modal-overlay" id="detail-modal" style="display:none;">
+  <div class="modal-box" id="detail-modal-box">
+    <button class="modal-close" id="detail-close" aria-label="סגירה">✕</button>
+    <div id="detail-content"></div>
+  </div>
 </div>
 
 <script>
@@ -280,144 +303,144 @@
   // ---------------- DATABASE ----------------
   const BASE_ACTIVITIES = [
     // ===== HIKES =====
-    {id:"banias", name:"נחל בניאס", region:"north", coords:[33.248,35.694], type:"hike", tags:{water:"yes",difficulty:"easy",circular:"no",duration:"short"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"מסלול הליכה קליל לאורך הנחל עם מפל מרשים בסופו, מתאים למשפחות עם ילדים."},
-    {id:"snir", name:"נחל שניר", region:"north", coords:[33.21,35.66], type:"hike", tags:{water:"yes",difficulty:"medium",circular:"no",duration:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"הליכה בין ברכות ואיים בנחל הזורם כל השנה, כולל קטעים רדודים במים."},
-    {id:"sachne", name:"גן השלושה (סחנה)", region:"north", coords:[32.503,35.391], type:"calm", tags:{setting:"nature",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"בריכות טבעיות מוצלות במים פושרים כל השנה, פופולרי מאוד למשפחות."},
-    {id:"amud", name:"נחל עמוד", region:"north", coords:[32.90,35.48], type:"hike", tags:{water:"yes",difficulty:"medium",circular:"no",duration:"long"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"מסלול נחל ארוך וירוק עם מערות וטחנות קמח עתיקות לאורך הדרך."},
-    {id:"yehudiya", name:"נחל יהודיה", region:"north", coords:[32.90,35.68], type:"hike", tags:{water:"yes",difficulty:"hard",circular:"no",duration:"long"}, ages:["teens"], budget:"low", stroller:false, dogs:false, group:["small"], desc:"מסלול גולני מאתגר עם קפיצות מים ובריכות, מתאים למשפחות עם ילדים גדולים."},
-    {id:"meron", name:"שביל הררי מירון", region:"north", coords:[32.985,35.412], type:"hike", tags:{water:"no",difficulty:"hard",circular:"yes",duration:"medium"}, ages:["teens"], budget:"free", stroller:false, dogs:true, group:["small","medium"], desc:"טיפוס אל הפסגה הגבוהה בצפון עם נוף פנורמי לגליל כולו."},
-    {id:"dishon", name:"נחל דישון", region:"north", coords:[33.05,35.35], type:"hike", tags:{water:"yes",difficulty:"medium",circular:"no",duration:"medium"}, ages:["kids","teens"], budget:"free", stroller:false, dogs:true, group:["small","medium"], desc:"מסלול צל ומים בגליל המערבי, פחות מוכר ולכן שקט יותר."},
-    {id:"arbel", name:"הר ארבל", region:"north", coords:[32.82,35.49], type:"hike", tags:{water:"no",difficulty:"hard",circular:"no",duration:"medium"}, ages:["teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"ירידה תלולה מהמצוק אל מול הכנרת, עם תצפית מרהיבה מהפסגה."},
-    {id:"gamla", name:"גמלא", region:"north", coords:[32.90,35.75], type:"hike", tags:{water:"no",difficulty:"medium",circular:"yes",duration:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"מסלול בגובה הרמה אל מול המפל הגבוה בישראל, עם תצפית על נשרים."},
-    {id:"canada-park", name:"פארק קנדה", region:"shfela", coords:[31.83,34.98], type:"hike", tags:{water:"no",difficulty:"easy",circular:"yes",duration:"short"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"שבילים מוצלים ביערות אורנים עם שרידים רומיים ובריכות עונתיות."},
-    {id:"sataf", name:"שאטף", region:"jerusalem", coords:[31.77,35.13], type:"hike", tags:{water:"yes",difficulty:"easy",circular:"yes",duration:"short"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"טרסות חקלאיות עתיקות עם מעיינות זורמים במרחק קצר מירושלים."},
-    {id:"ein-lavan", name:"עין לבן", region:"jerusalem", coords:[31.73,35.13], type:"hike", tags:{water:"yes",difficulty:"easy",circular:"yes",duration:"short"}, ages:["toddlers","kids","teens"], budget:"free", stroller:false, dogs:true, group:["small","medium"], desc:"בריכת מים כחולה בין ההרים, יעד קליל ומרענן לכל המשפחה."},
-    {id:"alexander", name:"נחל אלכסנדר", region:"sharon", coords:[32.39,34.87], type:"hike", tags:{water:"yes",difficulty:"easy",circular:"no",duration:"short"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"מסלול נגיש לאורך הנחל, ידוע כבית הגידול של הצבים הרכים."},
-    {id:"poleg", name:"נחל פולג", region:"sharon", coords:[32.27,34.85], type:"hike", tags:{water:"no",difficulty:"easy",circular:"no",duration:"short"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"רצועת חוף ונחל בשולי נתניה, מסלול קליל וקרוב לים."},
-    {id:"masada", name:"מצדה", region:"arava", coords:[31.32,35.35], type:"hike", tags:{water:"no",difficulty:"hard",circular:"no",duration:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"טיפוס אל מצודת הורדוס מעל ים המלח, עם רכבל לחוזרים מטה."},
-    {id:"ein-gedi", name:"עין גדי", region:"arava", coords:[31.46,35.38], type:"hike", tags:{water:"yes",difficulty:"medium",circular:"no",duration:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"נחל מדברי קבוע עם מפלים ובריכות טבעיות, וביניהם יעלים ושפני סלע."},
-    {id:"ein-avdat", name:"עין עבדת", region:"south", coords:[30.80,34.77], type:"hike", tags:{water:"yes",difficulty:"easy",circular:"no",duration:"short"}, ages:["toddlers","kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"קניון מדברי צר עם בריכות מים טבעיות ואפשרות לצפות בעופות דורסים."},
-    {id:"ramon-crater", name:"מכתש רמון - שביל תצפית", region:"south", coords:[30.61,34.80], type:"hike", tags:{water:"no",difficulty:"medium",circular:"yes",duration:"medium"}, ages:["kids","teens"], budget:"free", stroller:false, dogs:true, group:["small","medium","large"], desc:"הליכה על שפת המכתש הגדול בעולם עם נופי מדבר וגיאולוגיה חשופה."},
-    {id:"timna", name:"פארק תמנע", region:"south", coords:[29.78,34.99], type:"hike", tags:{water:"no",difficulty:"easy",circular:"yes",duration:"medium"}, ages:["toddlers","kids","teens"], budget:"low", stroller:false, dogs:true, group:["small","medium","large"], desc:"תצורות סלע אדומות ייחודיות, מכרות נחושת עתיקים ואגם מלאכותי לרגיעה."},
-    {id:"maayan-harod", name:"מעיין חרוד", region:"north", coords:[32.55,35.38], type:"hike", tags:{water:"yes",difficulty:"easy",circular:"yes",duration:"short"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"בריכת מעיין גדולה למרגלות הגלבוע, מוקפת מדשאות לפיקניק."},
-    {id:"wadi-qelt", name:"וואדי קלט", region:"jerusalem", coords:[31.83,35.40], type:"hike", tags:{water:"yes",difficulty:"medium",circular:"no",duration:"medium"}, ages:["kids","teens"], budget:"free", stroller:false, dogs:false, group:["small","medium"], desc:"מסלול קניון מדברי דרמטי עם מנזר חצוב בצוק ומעיינות לאורך הדרך."},
-    {id:"gilboa-irises", name:"שביל פרחי הבר בגלבוע", region:"north", coords:[32.48,35.42], type:"hike", tags:{water:"no",difficulty:"easy",circular:"no",duration:"short"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"מסלול קליל בין עשבוניות בר נדירות, מרשים במיוחד באביב."},
-    {id:"tavor-stream", name:"נחל תבור", region:"north", coords:[32.68,35.47], type:"hike", tags:{water:"yes",difficulty:"medium",circular:"no",duration:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"מסלול נחל צפוף בצמחייה עם ברכות עונתיות בין הרי הגליל התחתון."},
-    {id:"ein-jweiza", name:"עין ג'וויזה", region:"jerusalem", coords:[31.72,35.10], type:"hike", tags:{water:"yes",difficulty:"easy",circular:"yes",duration:"short"}, ages:["toddlers","kids","teens"], budget:"free", stroller:false, dogs:true, group:["small","medium"], desc:"מעיין קטן ושקט בהרי ירושלים, פחות מוכר ולכן נעים במיוחד."},
-    {id:"adullam", name:"שמורת עדולם", region:"shfela", coords:[31.62,34.95], type:"hike", tags:{water:"no",difficulty:"easy",circular:"yes",duration:"medium"}, ages:["kids","teens"], budget:"free", stroller:false, dogs:true, group:["small","medium","large"], desc:"נופי בתה ומערות טבעיות בין גבעות השפלה, שקט ופתוח."},
-    {id:"besor-stream", name:"נחל הבשור", region:"south", coords:[31.20,34.55], type:"hike", tags:{water:"yes",difficulty:"easy",circular:"no",duration:"medium"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"נחל איתן במערב הנגב עם שבילי הליכה ורכיבה לאורך הגדות."},
-    {id:"tzelim-stream", name:"נחל צאלים", region:"south", coords:[30.95,35.15], type:"hike", tags:{water:"yes",difficulty:"hard",circular:"no",duration:"long"}, ages:["teens"], budget:"free", stroller:false, dogs:false, group:["small"], desc:"מסלול מדברי מאתגר עם בריכות והרפתקה אמיתית, למשפחות מנוסות."},
-    {id:"nitzanim-dunes", name:"טיילת החולות בניצנים", region:"south", coords:[31.72,34.62], type:"hike", tags:{water:"no",difficulty:"easy",circular:"no",duration:"short"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"הליכה בין דיונות חול ענקיות עד לחוף הים, נעים גם עם עגלה."},
-    {id:"taninim-stream", name:"נחל תנינים", region:"sharon", coords:[32.55,34.90], type:"hike", tags:{water:"yes",difficulty:"easy",circular:"no",duration:"short"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"מסלול קצר ושטוח לאורך אחד הנחלים המעטים שזורמים כל השנה בשרון."},
+    {id:"banias", name:"נחל בניאס", region:"north", coords:[33.248,35.694], type:"hike", tags:{water:"yes",difficulty:"easy",circular:"no",duration:"short"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"מסלול הליכה קליל לאורך הנחל עם מפל מרשים בסופו, מתאים למשפחות עם ילדים.", location:"בפתחת רמת הגולן, סמוך לקיבוץ שאר ישוב", website:"https://www.parks.org.il", phone:"*3639"},
+    {id:"snir", name:"נחל שניר", region:"north", coords:[33.21,35.66], type:"hike", tags:{water:"yes",difficulty:"medium",circular:"no",duration:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"הליכה בין ברכות ואיים בנחל הזורם כל השנה, כולל קטעים רדודים במים.", location:"צפונית לקריית שמונה, ליד קיבוץ שניר", website:"https://www.parks.org.il", phone:"*3639"},
+    {id:"sachne", name:"גן השלושה (סחנה)", region:"north", coords:[32.503,35.391], type:"calm", tags:{setting:"nature",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"בריכות טבעיות מוצלות במים פושרים כל השנה, פופולרי מאוד למשפחות.", location:"בעמק בית שאן, ליד קיבוץ ניר דוד", website:"https://www.parks.org.il", phone:"*3639"},
+    {id:"amud", name:"נחל עמוד", region:"north", coords:[32.90,35.48], type:"hike", tags:{water:"yes",difficulty:"medium",circular:"no",duration:"long"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"מסלול נחל ארוך וירוק עם מערות וטחנות קמח עתיקות לאורך הדרך.", location:"ממערב לכנרת, בין צפת לטבריה", website:"https://www.parks.org.il", phone:"*3639"},
+    {id:"yehudiya", name:"נחל יהודיה", region:"north", coords:[32.90,35.68], type:"hike", tags:{water:"yes",difficulty:"hard",circular:"no",duration:"long"}, ages:["teens"], budget:"low", stroller:false, dogs:false, group:["small"], desc:"מסלול גולני מאתגר עם קפיצות מים ובריכות, מתאים למשפחות עם ילדים גדולים.", location:"ברמת הגולן, סמוך לקצרין", website:"https://www.parks.org.il", phone:"*3639"},
+    {id:"meron", name:"שביל הררי מירון", region:"north", coords:[32.985,35.412], type:"hike", tags:{water:"no",difficulty:"hard",circular:"yes",duration:"medium"}, ages:["teens"], budget:"free", stroller:false, dogs:true, group:["small","medium"], desc:"טיפוס אל הפסגה הגבוהה בצפון עם נוף פנורמי לגליל כולו.", location:"ליד הישוב מירון, הרי הגליל העליון", website:"https://www.parks.org.il", phone:"*3639"},
+    {id:"dishon", name:"נחל דישון", region:"north", coords:[33.05,35.35], type:"hike", tags:{water:"yes",difficulty:"medium",circular:"no",duration:"medium"}, ages:["kids","teens"], budget:"free", stroller:false, dogs:true, group:["small","medium"], desc:"מסלול צל ומים בגליל המערבי, פחות מוכר ולכן שקט יותר.", location:"בגליל המערבי, ליד קיבוץ כברי"},
+    {id:"arbel", name:"הר ארבל", region:"north", coords:[32.82,35.49], type:"hike", tags:{water:"no",difficulty:"hard",circular:"no",duration:"medium"}, ages:["teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"ירידה תלולה מהמצוק אל מול הכנרת, עם תצפית מרהיבה מהפסגה.", location:"מול הכנרת, ליד מושב ארבל", website:"https://www.parks.org.il", phone:"*3639"},
+    {id:"gamla", name:"גמלא", region:"north", coords:[32.90,35.75], type:"hike", tags:{water:"no",difficulty:"medium",circular:"yes",duration:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"מסלול בגובה הרמה אל מול המפל הגבוה בישראל, עם תצפית על נשרים.", location:"ברמת הגולן, ליד קיבוץ אלוני הבשן", website:"https://www.parks.org.il", phone:"*3639"},
+    {id:"canada-park", name:"פארק קנדה", region:"shfela", coords:[31.83,34.98], type:"hike", tags:{water:"no",difficulty:"easy",circular:"yes",duration:"short"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"שבילים מוצלים ביערות אורנים עם שרידים רומיים ובריכות עונתיות.", location:"בין לטרון למבוא ביתר, ליד שילת", website:"https://www.kkl.org.il"},
+    {id:"sataf", name:"שאטף", region:"jerusalem", coords:[31.77,35.13], type:"hike", tags:{water:"yes",difficulty:"easy",circular:"yes",duration:"short"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"טרסות חקלאיות עתיקות עם מעיינות זורמים במרחק קצר מירושלים.", location:"ליד מושב בר גיורא, מערבית לירושלים", website:"https://www.kkl.org.il"},
+    {id:"ein-lavan", name:"עין לבן", region:"jerusalem", coords:[31.73,35.13], type:"hike", tags:{water:"yes",difficulty:"easy",circular:"yes",duration:"short"}, ages:["toddlers","kids","teens"], budget:"free", stroller:false, dogs:true, group:["small","medium"], desc:"בריכת מים כחולה בין ההרים, יעד קליל ומרענן לכל המשפחה.", location:"ליד מושב עמינדב, מערבית לירושלים"},
+    {id:"alexander", name:"נחל אלכסנדר", region:"sharon", coords:[32.39,34.87], type:"hike", tags:{water:"yes",difficulty:"easy",circular:"no",duration:"short"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"מסלול נגיש לאורך הנחל, ידוע כבית הגידול של הצבים הרכים.", location:"בין נתניה לחדרה, ליד כפר ויתקין", website:"https://www.parks.org.il", phone:"*3639"},
+    {id:"poleg", name:"נחל פולג", region:"sharon", coords:[32.27,34.85], type:"hike", tags:{water:"no",difficulty:"easy",circular:"no",duration:"short"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"רצועת חוף ונחל בשולי נתניה, מסלול קליל וקרוב לים.", location:"בדרום העיר נתניה"},
+    {id:"masada", name:"מצדה", region:"arava", coords:[31.32,35.35], type:"hike", tags:{water:"no",difficulty:"hard",circular:"no",duration:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"טיפוס אל מצודת הורדוס מעל ים המלח, עם רכבל לחוזרים מטה.", location:"ליד עין בוקק, מערבית לים המלח", website:"https://www.parks.org.il", phone:"*3639"},
+    {id:"ein-gedi", name:"עין גדי", region:"arava", coords:[31.46,35.38], type:"hike", tags:{water:"yes",difficulty:"medium",circular:"no",duration:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"נחל מדברי קבוע עם מפלים ובריכות טבעיות, וביניהם יעלים ושפני סלע.", location:"ליד קיבוץ עין גדי, חוף ים המלח המערבי", website:"https://www.parks.org.il", phone:"*3639"},
+    {id:"ein-avdat", name:"עין עבדת", region:"south", coords:[30.80,34.77], type:"hike", tags:{water:"yes",difficulty:"easy",circular:"no",duration:"short"}, ages:["toddlers","kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"קניון מדברי צר עם בריכות מים טבעיות ואפשרות לצפות בעופות דורסים.", location:"ליד קיבוץ שדה בוקר", website:"https://www.parks.org.il", phone:"*3639"},
+    {id:"ramon-crater", name:"מכתש רמון - שביל תצפית", region:"south", coords:[30.61,34.80], type:"hike", tags:{water:"no",difficulty:"medium",circular:"yes",duration:"medium"}, ages:["kids","teens"], budget:"free", stroller:false, dogs:true, group:["small","medium","large"], desc:"הליכה על שפת המכתש הגדול בעולם עם נופי מדבר וגיאולוגיה חשופה.", location:"בעיר מצפה רמון", website:"https://www.parks.org.il", phone:"*3639"},
+    {id:"timna", name:"פארק תמנע", region:"south", coords:[29.78,34.99], type:"hike", tags:{water:"no",difficulty:"easy",circular:"yes",duration:"medium"}, ages:["toddlers","kids","teens"], budget:"low", stroller:false, dogs:true, group:["small","medium","large"], desc:"תצורות סלע אדומות ייחודיות, מכרות נחושת עתיקים ואגם מלאכותי לרגיעה.", location:"צפונית לאילת, ליד קיבוץ אילות", website:"https://www.parktimna.co.il"},
+    {id:"maayan-harod", name:"מעיין חרוד", region:"north", coords:[32.55,35.38], type:"hike", tags:{water:"yes",difficulty:"easy",circular:"yes",duration:"short"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"בריכת מעיין גדולה למרגלות הגלבוע, מוקפת מדשאות לפיקניק.", location:"למרגלות הגלבוע, ליד קיבוץ תל יוסף", website:"https://www.parks.org.il", phone:"*3639"},
+    {id:"wadi-qelt", name:"וואדי קלט", region:"jerusalem", coords:[31.83,35.40], type:"hike", tags:{water:"yes",difficulty:"medium",circular:"no",duration:"medium"}, ages:["kids","teens"], budget:"free", stroller:false, dogs:false, group:["small","medium"], desc:"מסלול קניון מדברי דרמטי עם מנזר חצוב בצוק ומעיינות לאורך הדרך.", location:"בין ירושלים ליריחו, ליד מנזר סנט גורג", website:"https://www.parks.org.il", phone:"*3639"},
+    {id:"gilboa-irises", name:"שביל פרחי הבר בגלבוע", region:"north", coords:[32.48,35.42], type:"hike", tags:{water:"no",difficulty:"easy",circular:"no",duration:"short"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"מסלול קליל בין עשבוניות בר נדירות, מרשים במיוחד באביב.", location:"בהרי הגלבוע, ליד מושב מעלה גלבוע", website:"https://www.parks.org.il", phone:"*3639"},
+    {id:"tavor-stream", name:"נחל תבור", region:"north", coords:[32.68,35.47], type:"hike", tags:{water:"yes",difficulty:"medium",circular:"no",duration:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"מסלול נחל צפוף בצמחייה עם ברכות עונתיות בין הרי הגליל התחתון.", location:"בגליל התחתון, ליד כפר תבור", website:"https://www.parks.org.il", phone:"*3639"},
+    {id:"ein-jweiza", name:"עין ג'וויזה", region:"jerusalem", coords:[31.72,35.10], type:"hike", tags:{water:"yes",difficulty:"easy",circular:"yes",duration:"short"}, ages:["toddlers","kids","teens"], budget:"free", stroller:false, dogs:true, group:["small","medium"], desc:"מעיין קטן ושקט בהרי ירושלים, פחות מוכר ולכן נעים במיוחד.", location:"ליד מושב צובה, מערבית לירושלים"},
+    {id:"adullam", name:"שמורת עדולם", region:"shfela", coords:[31.62,34.95], type:"hike", tags:{water:"no",difficulty:"easy",circular:"yes",duration:"medium"}, ages:["kids","teens"], budget:"free", stroller:false, dogs:true, group:["small","medium","large"], desc:"נופי בתה ומערות טבעיות בין גבעות השפלה, שקט ופתוח.", location:"בשמורת עדולם-פרנס, ליד מושב אדרת"},
+    {id:"besor-stream", name:"נחל הבשור", region:"south", coords:[31.20,34.55], type:"hike", tags:{water:"yes",difficulty:"easy",circular:"no",duration:"medium"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"נחל איתן במערב הנגב עם שבילי הליכה ורכיבה לאורך הגדות.", location:"במערב הנגב, ליד קיבוץ רעים"},
+    {id:"tzelim-stream", name:"נחל צאלים", region:"south", coords:[30.95,35.15], type:"hike", tags:{water:"yes",difficulty:"hard",circular:"no",duration:"long"}, ages:["teens"], budget:"free", stroller:false, dogs:false, group:["small"], desc:"מסלול מדברי מאתגר עם בריכות והרפתקה אמיתית, למשפחות מנוסות.", location:"במדבר יהודה, ליד ערד", website:"https://www.parks.org.il", phone:"*3639"},
+    {id:"nitzanim-dunes", name:"טיילת החולות בניצנים", region:"south", coords:[31.72,34.62], type:"hike", tags:{water:"no",difficulty:"easy",circular:"no",duration:"short"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"הליכה בין דיונות חול ענקיות עד לחוף הים, נעים גם עם עגלה.", location:"בין אשדוד לאשקלון, ליד ניצנים", website:"https://www.parks.org.il", phone:"*3639"},
+    {id:"taninim-stream", name:"נחל תנינים", region:"sharon", coords:[32.55,34.90], type:"hike", tags:{water:"yes",difficulty:"easy",circular:"no",duration:"short"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"מסלול קצר ושטוח לאורך אחד הנחלים המעטים שזורמים כל השנה בשרון.", location:"בין חדרה לזכרון יעקב, ליד קיבוץ מעגן מיכאל", website:"https://www.parks.org.il", phone:"*3639"},
 
     // ===== CALM =====
-    {id:"rosh-hanikra", name:"ראש הנקרה", region:"north", coords:[33.09,35.10], type:"calm", tags:{setting:"nature",indoor:"mixed"}, ages:["toddlers","kids","teens"], budget:"high", stroller:true, dogs:false, group:["small","medium","large"], desc:"מערות נקיקים לבנות מול הים עם רכבל יורד אל קו החוף."},
-    {id:"achziv", name:"חוף אכזיב", region:"north", coords:[33.04,35.10], type:"calm", tags:{setting:"beach",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"חוף ים שקט עם בריכות טבעיות בין הסלעים, מצוין לילדים קטנים."},
-    {id:"dor", name:"חוף דור הבונים", region:"haifa", coords:[32.62,34.92], type:"calm", tags:{setting:"beach",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"מפרצונים וסלעי כורכר לחקירה, חוף טבעי ורגוע יחסית."},
-    {id:"yarkon", name:"פארק הירקון", region:"center", coords:[32.10,34.79], type:"calm", tags:{setting:"park",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"שטחי דשא, אגם סירות ושבילי אופניים לאורך נחל הירקון בלב תל אביב."},
-    {id:"palmachim", name:"חוף פלמחים", region:"center", coords:[31.93,34.69], type:"calm", tags:{setting:"beach",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"חוף טבעי ורחב עם דיונות חול, ללא בנייה מסחרית לאורך קו החוף."},
-    {id:"ein-hemed", name:"עין חמד", region:"jerusalem", coords:[31.80,35.13], type:"calm", tags:{setting:"nature",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"פארק מוצל סביב בריכה ומעיין, עם שטחי דשא נרחבים לפיקניק."},
-    {id:"sacher", name:"גן סאקר", region:"jerusalem", coords:[31.78,35.21], type:"calm", tags:{setting:"park",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"הפארק העירוני המרכזי של ירושלים עם מתחמי משחקים ושטחי דשא נרחבים."},
-    {id:"raanana-park", name:"פארק העירוני רעננה", region:"sharon", coords:[32.18,34.87], type:"calm", tags:{setting:"park",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"אגם, מדשאות ופינות משחק במרכז השרון, נעים לבילוי אחר הצהריים."},
-    {id:"ben-shemen-forest", name:"יער בן שמן", region:"center", coords:[31.95,34.92], type:"calm", tags:{setting:"nature",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"יער נטיעות ותיק עם שבילי אופניים ופינות פיקניק מוצלות."},
-    {id:"dead-sea", name:"חוף ים המלח", region:"arava", coords:[31.20,35.38], type:"calm", tags:{setting:"beach",indoor:"outdoor"}, ages:["kids","teens"], budget:"high", stroller:true, dogs:false, group:["small","medium","large"], desc:"ציפה קלה במים המלוחים ביותר בעולם, מתחמי רחצה מאורגנים לאורך החוף."},
-    {id:"ariel-sharon-park", name:"פארק אריאל שרון", region:"center", coords:[32.03,34.83], type:"calm", tags:{setting:"park",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"פארק ירוק ענק שהוקם על מזבלה לשעבר, עם גבעות, אגמים ותצפית פתוחה."},
-    {id:"bat-yam-beach", name:"חוף בת ים", region:"center", coords:[32.02,34.74], type:"calm", tags:{setting:"beach",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:false, group:["small","medium","large"], desc:"חוף עירוני נגיש עם טיילת ארוכה ופינות ישיבה מוצלות."},
-    {id:"agamon-hula", name:"אגמון החולה", region:"north", coords:[33.09,35.60], type:"calm", tags:{setting:"nature",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"אגם ושמורת ציפורים עם סיור עגלות רגוע, מרשים במיוחד בעונת הנדידה."},
-    {id:"bell-park", name:"גן הפעמון", region:"jerusalem", coords:[31.77,35.22], type:"calm", tags:{setting:"park",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"פארק קטן ומוצל בלב העיר עם פינת משחקים ופסלים ציבוריים."},
-    {id:"ashkelon-park", name:"הגן הלאומי אשקלון", region:"south", coords:[31.65,34.55], type:"calm", tags:{setting:"beach",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"שילוב של חוף ים ושרידים ארכיאולוגיים על מצוק ירוק ורחב."},
-    {id:"hachoresh-park", name:"גן החורש", region:"center", coords:[32.09,34.79], type:"calm", tags:{setting:"park",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"פארק שכונתי ירוק ושקט בלב תל אביב, עם פינות צל נעימות."},
-    {id:"olga-beach", name:"חוף אולגה", region:"sharon", coords:[32.48,34.87], type:"calm", tags:{setting:"beach",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"חוף שקט וידידותי למשפחות בין חדרה לנתניה, עם חניה נוחה."},
-    {id:"kfar-saba-park", name:"פארק כפר סבא", region:"sharon", coords:[32.17,34.91], type:"calm", tags:{setting:"park",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"מתחם ירוק עם אגם קטן, גני שעשועים ומסלולי אופניים."},
-    {id:"ein-fashkha", name:"עינות צוקים (עין פשחה)", region:"arava", coords:[31.57,35.45], type:"calm", tags:{setting:"nature",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"בריכות מים מתוקים ליד ים המלח, עם צל שיטים ומצפור עצים."},
+    {id:"rosh-hanikra", name:"ראש הנקרה", region:"north", coords:[33.09,35.10], type:"calm", tags:{setting:"nature",indoor:"mixed"}, ages:["toddlers","kids","teens"], budget:"high", stroller:true, dogs:false, group:["small","medium","large"], desc:"מערות נקיקים לבנות מול הים עם רכבל יורד אל קו החוף.", location:"בגבול ישראל-לבנון, צמוד לקיבוץ ראש הנקרה", website:"https://www.rosh-hanikra.com"},
+    {id:"achziv", name:"חוף אכזיב", region:"north", coords:[33.04,35.10], type:"calm", tags:{setting:"beach",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"חוף ים שקט עם בריכות טבעיות בין הסלעים, מצוין לילדים קטנים.", location:"צפונית לנהריה, ליד קיבוץ אכזיב", website:"https://www.parks.org.il", phone:"*3639"},
+    {id:"dor", name:"חוף דור הבונים", region:"haifa", coords:[32.62,34.92], type:"calm", tags:{setting:"beach",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"מפרצונים וסלעי כורכר לחקירה, חוף טבעי ורגוע יחסית.", location:"ליד מושב דור, דרומית לחוף הכרמל", website:"https://www.parks.org.il", phone:"*3639"},
+    {id:"yarkon", name:"פארק הירקון", region:"center", coords:[32.10,34.79], type:"calm", tags:{setting:"park",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"שטחי דשא, אגם סירות ושבילי אופניים לאורך נחל הירקון בלב תל אביב.", location:"בתל אביב, בין רמת גן לצפון העיר"},
+    {id:"palmachim", name:"חוף פלמחים", region:"center", coords:[31.93,34.69], type:"calm", tags:{setting:"beach",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"חוף טבעי ורחב עם דיונות חול, ללא בנייה מסחרית לאורך קו החוף.", location:"דרומית לראשון לציון, ליד קיבוץ פלמחים"},
+    {id:"ein-hemed", name:"עין חמד", region:"jerusalem", coords:[31.80,35.13], type:"calm", tags:{setting:"nature",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"פארק מוצל סביב בריכה ומעיין, עם שטחי דשא נרחבים לפיקניק.", location:"ממערב לירושלים, ליד מוצא עילית", website:"https://www.parks.org.il", phone:"*3639"},
+    {id:"sacher", name:"גן סאקר", region:"jerusalem", coords:[31.78,35.21], type:"calm", tags:{setting:"park",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"הפארק העירוני המרכזי של ירושלים עם מתחמי משחקים ושטחי דשא נרחבים.", location:"במרכז ירושלים, ליד קריית הממשלה"},
+    {id:"raanana-park", name:"פארק העירוני רעננה", region:"sharon", coords:[32.18,34.87], type:"calm", tags:{setting:"park",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"אגם, מדשאות ופינות משחק במרכז השרון, נעים לבילוי אחר הצהריים.", location:"במרכז העיר רעננה"},
+    {id:"ben-shemen-forest", name:"יער בן שמן", region:"center", coords:[31.95,34.92], type:"calm", tags:{setting:"nature",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"יער נטיעות ותיק עם שבילי אופניים ופינות פיקניק מוצלות.", location:"ליד הישוב בן שמן, מזרחית ללוד", website:"https://www.kkl.org.il"},
+    {id:"dead-sea", name:"חוף ים המלח", region:"arava", coords:[31.20,35.38], type:"calm", tags:{setting:"beach",indoor:"outdoor"}, ages:["kids","teens"], budget:"high", stroller:true, dogs:false, group:["small","medium","large"], desc:"ציפה קלה במים המלוחים ביותר בעולם, מתחמי רחצה מאורגנים לאורך החוף.", location:"לאורך חוף עין בוקק, דרומית לים המלח"},
+    {id:"ariel-sharon-park", name:"פארק אריאל שרון", region:"center", coords:[32.03,34.83], type:"calm", tags:{setting:"park",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"פארק ירוק ענק שהוקם על מזבלה לשעבר, עם גבעות, אגמים ותצפית פתוחה.", location:"בין חולון לבת ים"},
+    {id:"bat-yam-beach", name:"חוף בת ים", region:"center", coords:[32.02,34.74], type:"calm", tags:{setting:"beach",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:false, group:["small","medium","large"], desc:"חוף עירוני נגיש עם טיילת ארוכה ופינות ישיבה מוצלות.", location:"לאורך הטיילת בעיר בת ים"},
+    {id:"agamon-hula", name:"אגמון החולה", region:"north", coords:[33.09,35.60], type:"calm", tags:{setting:"nature",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"אגם ושמורת ציפורים עם סיור עגלות רגוע, מרשים במיוחד בעונת הנדידה.", location:"ליד מושב יסוד המעלה, בעמק החולה", website:"https://www.agamon-hula.co.il"},
+    {id:"bell-park", name:"גן הפעמון", region:"jerusalem", coords:[31.77,35.22], type:"calm", tags:{setting:"park",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"פארק קטן ומוצל בלב העיר עם פינת משחקים ופסלים ציבוריים.", location:"בשכונת ימין משה, ירושלים"},
+    {id:"ashkelon-park", name:"הגן הלאומי אשקלון", region:"south", coords:[31.65,34.55], type:"calm", tags:{setting:"beach",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"שילוב של חוף ים ושרידים ארכיאולוגיים על מצוק ירוק ורחב.", location:"בעיר אשקלון, לאורך החוף הדרומי", website:"https://www.parks.org.il", phone:"*3639"},
+    {id:"hachoresh-park", name:"גן החורש", region:"center", coords:[32.09,34.79], type:"calm", tags:{setting:"park",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"פארק שכונתי ירוק ושקט בלב תל אביב, עם פינות צל נעימות.", location:"בשכונת נווה אביבים, תל אביב"},
+    {id:"olga-beach", name:"חוף אולגה", region:"sharon", coords:[32.48,34.87], type:"calm", tags:{setting:"beach",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"חוף שקט וידידותי למשפחות בין חדרה לנתניה, עם חניה נוחה.", location:"בין חדרה לנתניה, ליד מושב בית יצחק"},
+    {id:"kfar-saba-park", name:"פארק כפר סבא", region:"sharon", coords:[32.17,34.91], type:"calm", tags:{setting:"park",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:true, group:["small","medium","large"], desc:"מתחם ירוק עם אגם קטן, גני שעשועים ומסלולי אופניים.", location:"במרכז העיר כפר סבא"},
+    {id:"ein-fashkha", name:"עינות צוקים (עין פשחה)", region:"arava", coords:[31.57,35.45], type:"calm", tags:{setting:"nature",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"בריכות מים מתוקים ליד ים המלח, עם צל שיטים ומצפור עצים.", location:"לאורך חוף ים המלח הצפוני, ליד קיבוץ קליה", website:"https://www.parks.org.il", phone:"*3639"},
 
     // ===== CULTURAL =====
-    {id:"nimrod", name:"מבצר נמרוד", region:"north", coords:[33.25,35.77], type:"cultural", tags:{kind:"historic",indoor:"outdoor"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"מצודה מימי הביניים על רכס הררי עם מגדלים ומנהרות לטיפוס וגילוי."},
-    {id:"akko-tunnels", name:"מנהרת הטמפלרים, עכו העתיקה", region:"north", coords:[32.92,35.07], type:"cultural", tags:{kind:"historic",indoor:"mixed"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"סיור בעיר העתיקה ובמנהרה ההיסטורית מתחתיה, חוויה של פעם."},
-    {id:"bahai", name:"גני הבהאים", region:"haifa", coords:[32.815,34.988], type:"cultural", tags:{kind:"historic",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:false, group:["small","medium","large"], desc:"גנים מדורגים ומטופחים במורד הכרמל עם נוף פתוח למפרץ חיפה."},
-    {id:"eretz-israel", name:"מוזיאון ארץ ישראל", region:"center", coords:[32.11,34.80], type:"cultural", tags:{kind:"museum",indoor:"indoor"}, ages:["kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"קומפלקס פביליונים המציג ארכיאולוגיה, זכוכית ומטבעות בפעילות מודרכת."},
-    {id:"palmach-museum", name:"מוזיאון הפלמ\"ח", region:"center", coords:[32.09,34.79], type:"cultural", tags:{kind:"museum",indoor:"indoor"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"סיור חוויתי-דרמטי המשחזר את סיפור לוחמי הפלמ\"ח, מתאים מגיל בית ספר."},
-    {id:"safari", name:"הספארי - גן החיות רמת גן", region:"center", coords:[32.07,34.83], type:"cultural", tags:{kind:"zoo",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"high", stroller:true, dogs:false, group:["small","medium","large"], desc:"סיור רכוב בין חיות בר משוטטות, ולאחריו גן חיות הליכה עם עוד מאות מינים."},
-    {id:"antipatris", name:"מצודת אנטיפטריס (תל אפק)", region:"sharon", coords:[32.10,34.93], type:"cultural", tags:{kind:"historic",indoor:"outdoor"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"מצודה עות'מאנית על שרידי עיר עתיקה, לצד מעיינות הירקון."},
-    {id:"latrun", name:"מוזיאון השריון לטרון", region:"shfela", coords:[31.84,34.98], type:"cultural", tags:{kind:"museum",indoor:"mixed"}, ages:["kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"אוסף חוץ ענק של טנקים היסטוריים לצד תערוכה על קרבות שריון."},
-    {id:"israel-museum", name:"מוזיאון ישראל", region:"jerusalem", coords:[31.77,35.20], type:"cultural", tags:{kind:"museum",indoor:"indoor"}, ages:["teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"המוזיאון הגדול בישראל לאמנות וארכיאולוגיה, כולל מקדש הספר ומודל ירושלים העתיקה."},
-    {id:"bloomfield", name:"מוזיאון המדע ע\"ש בלומפילד", region:"jerusalem", coords:[31.78,35.20], type:"cultural", tags:{kind:"museum",indoor:"indoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"תערוכות אינטראקטיביות למגע ולהפעלה, מיועד במיוחד למשפחות עם ילדים."},
-    {id:"biblical-zoo", name:"הגן התנ\"כי ירושלים", region:"jerusalem", coords:[31.75,35.17], type:"cultural", tags:{kind:"zoo",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"high", stroller:true, dogs:false, group:["small","medium","large"], desc:"גן חיות נרחב עם דגש על מינים המוזכרים במקורות, כולל פינת חיות מגע."},
-    {id:"puppet-theater", name:"תיאטרון החאן / בובות ירושלים", region:"jerusalem", coords:[31.77,35.22], type:"cultural", tags:{kind:"show",indoor:"indoor"}, ages:["toddlers","kids"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"הצגות ילדים ובובות באולם אינטימי, אידאלי לילדים צעירים."},
-    {id:"gan-guru", name:"גן גורו", region:"shfela", coords:[31.72,34.86], type:"cultural", tags:{kind:"zoo",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"חוות קנגורו אוסטרלית שבה מותר ללטף ולהאכיל את בעלי החיים מקרוב."},
-    {id:"beit-guvrin", name:"בית גוברין - מערות המסתור", region:"shfela", coords:[31.61,34.90], type:"cultural", tags:{kind:"historic",indoor:"mixed"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"מערות פעמון ומערות יונים חצובות באדמה, אתר מורשת עולמית לגילוי וטיפוס."},
-    {id:"ramon-visitor-center", name:"מרכז המבקרים מצפה רמון", region:"south", coords:[30.61,34.80], type:"cultural", tags:{kind:"museum",indoor:"mixed"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"תערוכה גיאולוגית אינטראקטיבית עם תצפית ישירה אל תוך המכתש."},
-    {id:"tower-of-david", name:"מגדל דוד", region:"jerusalem", coords:[31.77,35.23], type:"cultural", tags:{kind:"historic",indoor:"mixed"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"מצודה עתיקה בלב העיר העתיקה עם תערוכות היסטוריה ותצוגת אור וקול בערבים."},
-    {id:"city-of-david", name:"עיר דוד", region:"jerusalem", coords:[31.77,35.24], type:"cultural", tags:{kind:"historic",indoor:"mixed"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"חפירות ארכיאולוגיות ומנהרת מים תת-קרקעית שאפשר לעבור בה ברגליים רטובות."},
-    {id:"haifa-submarine-museum", name:"מוזיאון הצוללות חיפה", region:"haifa", coords:[32.83,34.99], type:"cultural", tags:{kind:"museum",indoor:"mixed"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"צוללת אמיתית לטיפוס ותערוכה על תולדות חיל הים הישראלי."},
-    {id:"akko-prisoners", name:"מוזיאון האסירים, עכו", region:"north", coords:[32.92,35.07], type:"cultural", tags:{kind:"historic",indoor:"mixed"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"מבצר עות'מאני ובריטי לשעבר, מספר את סיפור המחתרות לפני קום המדינה."},
-    {id:"holon-childrens-museum", name:"מוזיאון הילדים חולון", region:"center", coords:[32.02,34.78], type:"cultural", tags:{kind:"museum",indoor:"indoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"תערוכות חוויתיות בחושך מוחלט ובדממה, מלוות במדריכים בעלי מוגבלויות."},
-    {id:"gesher-theater", name:"הצגת ילדים בתיאטרון גשר", region:"center", coords:[32.08,34.77], type:"cultural", tags:{kind:"show",indoor:"indoor"}, ages:["toddlers","kids"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"הצגות ילדים איכותיות באולם מרכזי, כדאי להזמין כרטיסים מראש."},
-    {id:"beer-sheva-bedouin-museum", name:"מוזיאון התרבות הבדואית", region:"south", coords:[31.25,34.79], type:"cultural", tags:{kind:"museum",indoor:"indoor"}, ages:["kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium"], desc:"תערוכה על אורח החיים המסורתי של הבדואים בנגב, כולל אוהל מוצג לדוגמה."},
+    {id:"nimrod", name:"מבצר נמרוד", region:"north", coords:[33.25,35.77], type:"cultural", tags:{kind:"historic",indoor:"outdoor"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"מצודה מימי הביניים על רכס הררי עם מגדלים ומנהרות לטיפוס וגילוי.", location:"סמוך לקיבוץ אורטל, מתחת להר החרמון", website:"https://www.parks.org.il", phone:"*3639"},
+    {id:"akko-tunnels", name:"מנהרת הטמפלרים, עכו העתיקה", region:"north", coords:[32.92,35.07], type:"cultural", tags:{kind:"historic",indoor:"mixed"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"סיור בעיר העתיקה ובמנהרה ההיסטורית מתחתיה, חוויה של פעם.", location:"בעיר העתיקה של עכו", website:"https://www.akko.org.il"},
+    {id:"bahai", name:"גני הבהאים", region:"haifa", coords:[32.815,34.988], type:"cultural", tags:{kind:"historic",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"free", stroller:true, dogs:false, group:["small","medium","large"], desc:"גנים מדורגים ומטופחים במורד הכרמל עם נוף פתוח למפרץ חיפה.", location:"במורד הכרמל, מרכז חיפה", website:"https://www.ganbahai.org.il"},
+    {id:"eretz-israel", name:"מוזיאון ארץ ישראל", region:"center", coords:[32.11,34.80], type:"cultural", tags:{kind:"museum",indoor:"indoor"}, ages:["kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"קומפלקס פביליונים המציג ארכיאולוגיה, זכוכית ומטבעות בפעילות מודרכת.", location:"ברמת אביב, תל אביב", website:"https://www.eretzmuseum.org.il"},
+    {id:"palmach-museum", name:"מוזיאון הפלמ\"ח", region:"center", coords:[32.09,34.79], type:"cultural", tags:{kind:"museum",indoor:"indoor"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"סיור חוויתי-דרמטי המשחזר את סיפור לוחמי הפלמ\"ח, מתאים מגיל בית ספר.", location:"ברמת אביב, תל אביב", website:"https://www.palmach.org.il"},
+    {id:"safari", name:"הספארי - גן החיות רמת גן", region:"center", coords:[32.07,34.83], type:"cultural", tags:{kind:"zoo",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"high", stroller:true, dogs:false, group:["small","medium","large"], desc:"סיור רכוב בין חיות בר משוטטות, ולאחריו גן חיות הליכה עם עוד מאות מינים.", location:"בעיר רמת גן", website:"https://www.safari.co.il"},
+    {id:"antipatris", name:"מצודת אנטיפטריס (תל אפק)", region:"sharon", coords:[32.10,34.93], type:"cultural", tags:{kind:"historic",indoor:"outdoor"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"מצודה עות'מאנית על שרידי עיר עתיקה, לצד מעיינות הירקון.", location:"ליד ראש העין", website:"https://www.parks.org.il", phone:"*3639"},
+    {id:"latrun", name:"מוזיאון השריון לטרון", region:"shfela", coords:[31.84,34.98], type:"cultural", tags:{kind:"museum",indoor:"mixed"}, ages:["kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"אוסף חוץ ענק של טנקים היסטוריים לצד תערוכה על קרבות שריון.", location:"בצומת לטרון, בין תל אביב לירושלים", website:"https://www.yadlashiryon.com"},
+    {id:"israel-museum", name:"מוזיאון ישראל", region:"jerusalem", coords:[31.77,35.20], type:"cultural", tags:{kind:"museum",indoor:"indoor"}, ages:["teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"המוזיאון הגדול בישראל לאמנות וארכיאולוגיה, כולל מקדש הספר ומודל ירושלים העתיקה.", location:"בשכונת גבעת רם, ירושלים", website:"https://www.imj.org.il"},
+    {id:"bloomfield", name:"מוזיאון המדע ע\"ש בלומפילד", region:"jerusalem", coords:[31.78,35.20], type:"cultural", tags:{kind:"museum",indoor:"indoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"תערוכות אינטראקטיביות למגע ולהפעלה, מיועד במיוחד למשפחות עם ילדים.", location:"ליד קריית האומנים, ירושלים", website:"https://www.mada.org.il"},
+    {id:"biblical-zoo", name:"הגן התנ\"כי ירושלים", region:"jerusalem", coords:[31.75,35.17], type:"cultural", tags:{kind:"zoo",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"high", stroller:true, dogs:false, group:["small","medium","large"], desc:"גן חיות נרחב עם דגש על מינים המוזכרים במקורות, כולל פינת חיות מגע.", location:"בשכונת מלחה, ירושלים", website:"https://www.jerusalemzoo.org.il"},
+    {id:"puppet-theater", name:"תיאטרון החאן / בובות ירושלים", region:"jerusalem", coords:[31.77,35.22], type:"cultural", tags:{kind:"show",indoor:"indoor"}, ages:["toddlers","kids"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"הצגות ילדים ובובות באולם אינטימי, אידאלי לילדים צעירים.", location:"בשכונת ימין משה, ירושלים"},
+    {id:"gan-guru", name:"גן גורו", region:"north", coords:[32.50,35.40], type:"cultural", tags:{kind:"zoo",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"חוות קנגורו אוסטרלית שבה מותר ללטף ולהאכיל את בעלי החיים מקרוב.", location:"בקיבוץ ניר דוד, עמק בית שאן", website:"https://www.gan-guru.co.il"},
+    {id:"beit-guvrin", name:"בית גוברין - מערות המסתור", region:"shfela", coords:[31.61,34.90], type:"cultural", tags:{kind:"historic",indoor:"mixed"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"מערות פעמון ומערות יונים חצובות באדמה, אתר מורשת עולמית לגילוי וטיפוס.", location:"ליד קריית גת, שמורת בית גוברין-מרשה", website:"https://www.parks.org.il", phone:"*3639"},
+    {id:"ramon-visitor-center", name:"מרכז המבקרים מצפה רמון", region:"south", coords:[30.61,34.80], type:"cultural", tags:{kind:"museum",indoor:"mixed"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"תערוכה גיאולוגית אינטראקטיבית עם תצפית ישירה אל תוך המכתש.", location:"בעיר מצפה רמון", website:"https://www.parks.org.il", phone:"*3639"},
+    {id:"tower-of-david", name:"מגדל דוד", region:"jerusalem", coords:[31.77,35.23], type:"cultural", tags:{kind:"historic",indoor:"mixed"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"מצודה עתיקה בלב העיר העתיקה עם תערוכות היסטוריה ותצוגת אור וקול בערבים.", location:"בעיר העתיקה, ליד שער יפו, ירושלים"},
+    {id:"city-of-david", name:"עיר דוד", region:"jerusalem", coords:[31.77,35.24], type:"cultural", tags:{kind:"historic",indoor:"mixed"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"חפירות ארכיאולוגיות ומנהרת מים תת-קרקעית שאפשר לעבור בה ברגליים רטובות.", location:"בשכונת סילוואן, דרומית להר הבית"},
+    {id:"haifa-submarine-museum", name:"מוזיאון הצוללות חיפה", region:"haifa", coords:[32.83,34.99], type:"cultural", tags:{kind:"museum",indoor:"mixed"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"צוללת אמיתית לטיפוס ותערוכה על תולדות חיל הים הישראלי.", location:"בשכונת שיכון ההסתדרות, חיפה"},
+    {id:"akko-prisoners", name:"מוזיאון האסירים, עכו", region:"north", coords:[32.92,35.07], type:"cultural", tags:{kind:"historic",indoor:"mixed"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"מבצר עות'מאני ובריטי לשעבר, מספר את סיפור המחתרות לפני קום המדינה.", location:"בעיר העתיקה עכו", website:"https://www.akko.org.il"},
+    {id:"holon-childrens-museum", name:"מוזיאון הילדים חולון", region:"center", coords:[32.02,34.78], type:"cultural", tags:{kind:"museum",indoor:"indoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"תערוכות חוויתיות בחושך מוחלט ובדממה, מלוות במדריכים בעלי מוגבלויות.", location:"בעיר חולון", website:"https://www.childrensmuseum.org.il"},
+    {id:"gesher-theater", name:"הצגת ילדים בתיאטרון גשר", region:"center", coords:[32.08,34.77], type:"cultural", tags:{kind:"show",indoor:"indoor"}, ages:["toddlers","kids"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"הצגות ילדים איכותיות באולם מרכזי, כדאי להזמין כרטיסים מראש.", location:"בשכונת יפו, תל אביב", website:"https://www.gesher-theatre.co.il"},
+    {id:"beer-sheva-bedouin-museum", name:"מרכז ג'ו אלון להכרת תרבות הבדואים", region:"south", coords:[31.38,34.81], type:"cultural", tags:{kind:"museum",indoor:"indoor"}, ages:["kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium"], desc:"תערוכה על אורח החיים המסורתי של הבדואים בנגב, כולל אוהל מוצג לדוגמה.", location:"בקיבוץ להב, צפונית לבאר שבע"},
 
     // ===== ADVENTURE =====
-    {id:"ropepark-golan", name:"פארק החבלים כרמים", region:"north", coords:[33.02,35.68], type:"adventure", tags:{kind:"rope",indoor:"outdoor",difficulty:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"מסלולי חבלים בין העצים בגבהים משתנים, כולל מסלול קל לילדים קטנים."},
-    {id:"kayak-jordan", name:"קיאקים בנחל הירדן", region:"north", coords:[32.83,35.62], type:"adventure", tags:{kind:"water",indoor:"outdoor",difficulty:"easy"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"שיט קיאקים משפחתי במים שקטים, פופולרי במיוחד בקיץ."},
-    {id:"waterpark-yamit", name:"פארק מים ימית 2000", region:"sharon", coords:[32.32,34.87], type:"adventure", tags:{kind:"water",indoor:"outdoor",difficulty:"easy"}, ages:["toddlers","kids","teens"], budget:"high", stroller:false, dogs:false, group:["small","medium","large"], desc:"מגלשות מים ובריכות לכל הגילאים, יעד קיץ קלאסי למשפחות."},
-    {id:"ropepark-benshemen", name:"פארק החבלים בן שמן", region:"center", coords:[31.95,34.92], type:"adventure", tags:{kind:"rope",indoor:"outdoor",difficulty:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"מסלולי אתגר בין צמרות העצים ביער בן שמן."},
-    {id:"clipnclimb", name:"קיר טיפוס Clip'n Climb", region:"center", coords:[31.96,34.80], type:"adventure", tags:{kind:"climb",indoor:"indoor",difficulty:"easy"}, ages:["toddlers","kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"קירות טיפוס מגוונים באולם מבוקר, מתאים גם למטפסים מתחילים."},
-    {id:"escape-room-ta", name:"חדר בריחה משפחתי תל אביב", region:"center", coords:[32.07,34.78], type:"adventure", tags:{kind:"escape",indoor:"indoor",difficulty:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small"], desc:"חידות ומשימות בזמן קצוב, יש חדרים מותאמים לילדים מגיל 8 ומעלה."},
-    {id:"trampoline-haifa", name:"פארק טרמפולינות חיפה", region:"haifa", coords:[32.79,35.00], type:"adventure", tags:{kind:"trampoline",indoor:"indoor",difficulty:"easy"}, ages:["toddlers","kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"אולם טרמפולינות מקורה עם בורות ספוג ואתגרי קפיצה."},
-    {id:"escape-room-jlm", name:"חדרי בריחה ירושלים", region:"jerusalem", coords:[31.78,35.22], type:"adventure", tags:{kind:"escape",indoor:"indoor",difficulty:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small"], desc:"סדרת חדרים בעלילות שונות במרכז העיר, זמן פתרון כשעה."},
-    {id:"sup-telbaruch", name:"סאפ וקיאקים בחוף תל ברוך", region:"center", coords:[32.12,34.80], type:"adventure", tags:{kind:"water",indoor:"outdoor",difficulty:"easy"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"השכרת ציוד סאפ וקיאק לשעה או יותר בים הפתוח."},
-    {id:"quad-arava", name:"רכיבת אופנועי שטח לילדים", region:"arava", coords:[30.60,35.15], type:"adventure", tags:{kind:"quad",indoor:"outdoor",difficulty:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"מסלול חולות מתוחם עם אופנועי שטח קטנים בליווי מדריך."},
-    {id:"treetop-yarkon", name:"פארק הרפתקאות עצים, גני יהושע", region:"center", coords:[32.10,34.80], type:"adventure", tags:{kind:"rope",indoor:"outdoor",difficulty:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"מסלולי חבלים וזיפליין בין העצים בלב פארק הירקון."},
-    {id:"ropepark-carmel", name:"פארק חבלים בכרמל", region:"haifa", coords:[32.75,35.03], type:"adventure", tags:{kind:"rope",indoor:"outdoor",difficulty:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"מסלולי אתגר בין עצי היער עם נוף פתוח להרי הכרמל."},
-    {id:"climbing-haifa", name:"קיר טיפוס בחיפה", region:"haifa", coords:[32.80,35.00], type:"adventure", tags:{kind:"climb",indoor:"indoor",difficulty:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"אולם טיפוס מקורה עם מסלולים ברמות קושי שונות לילדים ולמבוגרים."},
-    {id:"yesud-hamaala-zipline", name:"יער הזיפליין ביריה", region:"north", coords:[32.99,35.50], type:"adventure", tags:{kind:"rope",indoor:"outdoor",difficulty:"hard"}, ages:["teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"מסלולי זיפליין ארוכים בין צמרות עצי היער, לאמיצים שבמשפחה."},
-    {id:"superland", name:"פארק שעשועים ומים, ראשון לציון", region:"center", coords:[31.97,34.79], type:"adventure", tags:{kind:"trampoline",indoor:"outdoor",difficulty:"easy"}, ages:["toddlers","kids","teens"], budget:"high", stroller:true, dogs:false, group:["small","medium","large"], desc:"פארק שעשועים גדול עם רכבות הרים קלות ואטרקציות מים לחודשי הקיץ."},
-    {id:"escape-haifa", name:"חדר בריחה בחיפה", region:"haifa", coords:[32.82,35.00], type:"adventure", tags:{kind:"escape",indoor:"indoor",difficulty:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small"], desc:"חדרי בריחה עם עלילות ים ונמל, בהתאמה לאופי העיר."},
+    {id:"ropepark-golan", name:"פארק החבלים כרמים", region:"north", coords:[33.02,35.68], type:"adventure", tags:{kind:"rope",indoor:"outdoor",difficulty:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"מסלולי חבלים בין העצים בגבהים משתנים, כולל מסלול קל לילדים קטנים.", location:"בקיבוץ מרום גולן"},
+    {id:"kayak-jordan", name:"קיאקים בנחל הירדן", region:"north", coords:[32.83,35.62], type:"adventure", tags:{kind:"water",indoor:"outdoor",difficulty:"easy"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"שיט קיאקים משפחתי במים שקטים, פופולרי במיוחד בקיץ.", location:"ליד קיבוץ כפר בלום, עמק החולה", website:"https://www.kayaks.co.il"},
+    {id:"waterpark-yamit", name:"פארק מים ימית 2000", region:"sharon", coords:[32.32,34.87], type:"adventure", tags:{kind:"water",indoor:"outdoor",difficulty:"easy"}, ages:["toddlers","kids","teens"], budget:"high", stroller:false, dogs:false, group:["small","medium","large"], desc:"מגלשות מים ובריכות לכל הגילאים, יעד קיץ קלאסי למשפחות.", location:"בחוף השרון, ליד מכמורת", website:"https://www.yamit2000.co.il"},
+    {id:"ropepark-benshemen", name:"פארק החבלים בן שמן", region:"center", coords:[31.95,34.92], type:"adventure", tags:{kind:"rope",indoor:"outdoor",difficulty:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"מסלולי אתגר בין צמרות העצים ביער בן שמן.", location:"ביער בן שמן"},
+    {id:"clipnclimb", name:"קיר טיפוס Clip'n Climb", region:"center", coords:[31.96,34.80], type:"adventure", tags:{kind:"climb",indoor:"indoor",difficulty:"easy"}, ages:["toddlers","kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"קירות טיפוס מגוונים באולם מבוקר, מתאים גם למטפסים מתחילים.", location:"בעיר ראשון לציון", website:"https://www.clipnclimb.co.il"},
+    {id:"escape-room-ta", name:"חדר בריחה משפחתי תל אביב", region:"center", coords:[32.07,34.78], type:"adventure", tags:{kind:"escape",indoor:"indoor",difficulty:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small"], desc:"חידות ומשימות בזמן קצוב, יש חדרים מותאמים לילדים מגיל 8 ומעלה.", location:"במרכז תל אביב"},
+    {id:"trampoline-haifa", name:"פארק טרמפולינות חיפה", region:"haifa", coords:[32.79,35.00], type:"adventure", tags:{kind:"trampoline",indoor:"indoor",difficulty:"easy"}, ages:["toddlers","kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"אולם טרמפולינות מקורה עם בורות ספוג ואתגרי קפיצה.", location:"בעיר חיפה"},
+    {id:"escape-room-jlm", name:"חדרי בריחה ירושלים", region:"jerusalem", coords:[31.78,35.22], type:"adventure", tags:{kind:"escape",indoor:"indoor",difficulty:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small"], desc:"סדרת חדרים בעלילות שונות במרכז העיר, זמן פתרון כשעה.", location:"במרכז ירושלים"},
+    {id:"sup-telbaruch", name:"סאפ וקיאקים בחוף תל ברוך", region:"center", coords:[32.12,34.80], type:"adventure", tags:{kind:"water",indoor:"outdoor",difficulty:"easy"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"השכרת ציוד סאפ וקיאק לשעה או יותר בים הפתוח.", location:"בחוף תל ברוך, צפון תל אביב"},
+    {id:"quad-arava", name:"רכיבת אופנועי שטח לילדים", region:"arava", coords:[30.60,35.15], type:"adventure", tags:{kind:"quad",indoor:"outdoor",difficulty:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"מסלול חולות מתוחם עם אופנועי שטח קטנים בליווי מדריך.", location:"בערבה, ליד קיבוץ יהל"},
+    {id:"treetop-yarkon", name:"פארק הרפתקאות עצים, גני יהושע", region:"center", coords:[32.10,34.80], type:"adventure", tags:{kind:"rope",indoor:"outdoor",difficulty:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"מסלולי חבלים וזיפליין בין העצים בלב פארק הירקון.", location:"בגני יהושע, תל אביב"},
+    {id:"ropepark-carmel", name:"פארק חבלים בכרמל", region:"haifa", coords:[32.75,35.03], type:"adventure", tags:{kind:"rope",indoor:"outdoor",difficulty:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"מסלולי אתגר בין עצי היער עם נוף פתוח להרי הכרמל.", location:"בהרי הכרמל, ליד עספיא"},
+    {id:"climbing-haifa", name:"קיר טיפוס בחיפה", region:"haifa", coords:[32.80,35.00], type:"adventure", tags:{kind:"climb",indoor:"indoor",difficulty:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"אולם טיפוס מקורה עם מסלולים ברמות קושי שונות לילדים ולמבוגרים.", location:"בעיר חיפה"},
+    {id:"yesud-hamaala-zipline", name:"יער הזיפליין ביריה", region:"north", coords:[32.99,35.50], type:"adventure", tags:{kind:"rope",indoor:"outdoor",difficulty:"hard"}, ages:["teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"מסלולי זיפליין ארוכים בין צמרות עצי היער, לאמיצים שבמשפחה.", location:"ביער בירייה, ליד צפת"},
+    {id:"superland", name:"פארק שעשועים ומים, ראשון לציון", region:"center", coords:[31.97,34.79], type:"adventure", tags:{kind:"trampoline",indoor:"outdoor",difficulty:"easy"}, ages:["toddlers","kids","teens"], budget:"high", stroller:true, dogs:false, group:["small","medium","large"], desc:"פארק שעשועים גדול עם רכבות הרים קלות ואטרקציות מים לחודשי הקיץ.", location:"בעיר ראשון לציון", website:"https://www.superland.co.il"},
+    {id:"escape-haifa", name:"חדר בריחה בחיפה", region:"haifa", coords:[32.82,35.00], type:"adventure", tags:{kind:"escape",indoor:"indoor",difficulty:"medium"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small"], desc:"חדרי בריחה עם עלילות ים ונמל, בהתאמה לאופי העיר.", location:"בעיר חיפה"},
 
     // ===== FOOD =====
-    {id:"golan-winery", name:"יקב רמת הגולן - סיור וטעימות", region:"north", coords:[32.98,35.68], type:"food", tags:{kind:"winery",indoor:"mixed"}, ages:["teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"סיור קצר במרתפי היין ולאחריו טעימות מודרכות, כולל אזור פיקניק למשפחה."},
-    {id:"goat-dairy", name:"מחלבת עיזים בגליל", region:"north", coords:[32.95,35.28], type:"food", tags:{kind:"factory",indoor:"mixed"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:true, group:["small","medium"], desc:"פגישה עם העיזים וטעימת גבינות בחווה משפחתית קטנה."},
-    {id:"chocolate-factory", name:"מפעל שוקולד בגליל", region:"north", coords:[32.96,35.49], type:"food", tags:{kind:"factory",indoor:"indoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"סיור קצר בקווי הייצור וסדנת יציקת שוקולד לילדים בסוף הביקור."},
-    {id:"honey-farm", name:"חוות תבלינים ודבש, עמק יזרעאל", region:"north", coords:[32.65,35.33], type:"food", tags:{kind:"farm",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:true, group:["small","medium","large"], desc:"סיור בין כוורות ומטעי תבלינים עם טעימות דבש ותה צמחים."},
-    {id:"apple-picking-golan", name:"מטעי קטיף תפוחים בגולן", region:"north", coords:[33.05,35.75], type:"food", tags:{kind:"pickyourown",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:true, group:["small","medium","large"], desc:"קטיף עצמי בעונת הסתיו, פעילות משפחתית פשוטה ומספקת."},
-    {id:"strawberry-sharon", name:"מטע קטיף תותים, עמק חפר", region:"sharon", coords:[32.35,34.92], type:"food", tags:{kind:"pickyourown",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:true, group:["small","medium","large"], desc:"קטיף תותים עצמי בעונת החורף-אביב, אהוב במיוחד על הקטנים."},
-    {id:"carmel-market", name:"שוק הכרמל - סיור טעימות", region:"center", coords:[32.07,34.77], type:"food", tags:{kind:"market",indoor:"mixed"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"הליכה בין דוכני השוק עם עצירות טעימה במקומות נבחרים."},
-    {id:"machane-yehuda", name:"שוק מחנה יהודה", region:"jerusalem", coords:[31.78,35.21], type:"food", tags:{kind:"market",indoor:"mixed"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"שוק תוסס עם דוכני אוכל, מאפים ומוזיקה חיה בשעות אחר הצהריים."},
-    {id:"judean-winery", name:"יקב בהרי יהודה - סיור משפחות", region:"jerusalem", coords:[31.75,35.05], type:"food", tags:{kind:"winery",indoor:"mixed"}, ages:["teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"יקב בוטיק עם נוף להרים ופינת משחקים לילדים בזמן טעימות ההורים."},
-    {id:"ramat-negev-winery", name:"יקב ברמת הנגב", region:"south", coords:[31.00,34.75], type:"food", tags:{kind:"winery",indoor:"mixed"}, ages:["teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"יקב מדברי עם טעימות ונוף כותנה ירוק באמצע הנגב הצחיח."},
-    {id:"date-farm-arava", name:"חוות תמרים בערבה", region:"arava", coords:[30.30,35.15], type:"food", tags:{kind:"pickyourown",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:true, group:["small","medium","large"], desc:"סיור בין מטעי דקלים וטעימת תמרים טריים היישר מהעץ."},
-    {id:"upper-galilee-cheese", name:"מחלבת גבינות בגליל העליון", region:"north", coords:[33.13,35.57], type:"food", tags:{kind:"factory",indoor:"indoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium"], desc:"מחלבה בוטיקית עם הדגמת ייצור גבינות וטעימות בסוף הסיור."},
-    {id:"jaffa-flea-market", name:"שוק הפשפשים יפו", region:"center", coords:[32.05,34.75], type:"food", tags:{kind:"market",indoor:"mixed"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"סמטאות עתיקות עם דוכני אוכל, בתי קפה קטנים ואומנות רחוב."},
-    {id:"citrus-picking-sharon", name:"מטע קטיף הדרים בשרון", region:"sharon", coords:[32.28,34.90], type:"food", tags:{kind:"pickyourown",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:true, group:["small","medium","large"], desc:"קטיף תפוזים ואשכוליות עצמי בעונת החורף, כולל סחיטת מיץ טרי."},
+    {id:"golan-winery", name:"יקב רמת הגולן - סיור וטעימות", region:"north", coords:[32.98,35.68], type:"food", tags:{kind:"winery",indoor:"mixed"}, ages:["teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"סיור קצר במרתפי היין ולאחריו טעימות מודרכות, כולל אזור פיקניק למשפחה.", location:"בעיר קצרין, רמת הגולן", website:"https://www.golanwines.co.il"},
+    {id:"goat-dairy", name:"מחלבת עיזים בגליל", region:"north", coords:[32.95,35.28], type:"food", tags:{kind:"factory",indoor:"mixed"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:true, group:["small","medium"], desc:"פגישה עם העיזים וטעימת גבינות בחווה משפחתית קטנה.", location:"בגליל העליון, ליד מושב עצמון"},
+    {id:"chocolate-factory", name:"מפעל שוקולד בגליל", region:"north", coords:[32.96,35.49], type:"food", tags:{kind:"factory",indoor:"indoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"סיור קצר בקווי הייצור וסדנת יציקת שוקולד לילדים בסוף הביקור.", location:"בגליל העליון, ליד קריית שמונה"},
+    {id:"honey-farm", name:"חוות תבלינים ודבש, עמק יזרעאל", region:"north", coords:[32.65,35.33], type:"food", tags:{kind:"farm",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:true, group:["small","medium","large"], desc:"סיור בין כוורות ומטעי תבלינים עם טעימות דבש ותה צמחים.", location:"בעמק יזרעאל, ליד כפר תבור"},
+    {id:"apple-picking-golan", name:"מטעי קטיף תפוחים בגולן", region:"north", coords:[33.05,35.75], type:"food", tags:{kind:"pickyourown",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:true, group:["small","medium","large"], desc:"קטיף עצמי בעונת הסתיו, פעילות משפחתית פשוטה ומספקת.", location:"ברמת הגולן, ליד מושב אודם"},
+    {id:"strawberry-sharon", name:"מטע קטיף תותים, עמק חפר", region:"sharon", coords:[32.35,34.92], type:"food", tags:{kind:"pickyourown",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:true, group:["small","medium","large"], desc:"קטיף תותים עצמי בעונת החורף-אביב, אהוב במיוחד על הקטנים.", location:"בעמק חפר, ליד מושב בית יצחק"},
+    {id:"carmel-market", name:"שוק הכרמל - סיור טעימות", region:"center", coords:[32.07,34.77], type:"food", tags:{kind:"market",indoor:"mixed"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"הליכה בין דוכני השוק עם עצירות טעימה במקומות נבחרים.", location:"ברחוב הכרמל, תל אביב"},
+    {id:"machane-yehuda", name:"שוק מחנה יהודה", region:"jerusalem", coords:[31.78,35.21], type:"food", tags:{kind:"market",indoor:"mixed"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"שוק תוסס עם דוכני אוכל, מאפים ומוזיקה חיה בשעות אחר הצהריים.", location:"ברחוב אגריפס, ירושלים"},
+    {id:"judean-winery", name:"יקב בהרי יהודה - סיור משפחות", region:"jerusalem", coords:[31.75,35.05], type:"food", tags:{kind:"winery",indoor:"mixed"}, ages:["teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"יקב בוטיק עם נוף להרים ופינת משחקים לילדים בזמן טעימות ההורים.", location:"בהרי יהודה, סמוך לירושלים"},
+    {id:"ramat-negev-winery", name:"יקב ברמת הנגב", region:"south", coords:[31.00,34.75], type:"food", tags:{kind:"winery",indoor:"mixed"}, ages:["teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"יקב מדברי עם טעימות ונוף כותנה ירוק באמצע הנגב הצחיח.", location:"ברמת נגב, ליד קיבוץ רביבים"},
+    {id:"date-farm-arava", name:"חוות תמרים בערבה", region:"arava", coords:[30.30,35.15], type:"food", tags:{kind:"pickyourown",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:true, group:["small","medium","large"], desc:"סיור בין מטעי דקלים וטעימת תמרים טריים היישר מהעץ.", location:"בערבה, ליד קיבוץ צוקים"},
+    {id:"upper-galilee-cheese", name:"מחלבת גבינות בגליל העליון", region:"north", coords:[33.13,35.57], type:"food", tags:{kind:"factory",indoor:"indoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium"], desc:"מחלבה בוטיקית עם הדגמת ייצור גבינות וטעימות בסוף הסיור.", location:"בגליל העליון, ליד מושב שדה נחמיה"},
+    {id:"jaffa-flea-market", name:"שוק הפשפשים יפו", region:"center", coords:[32.05,34.75], type:"food", tags:{kind:"market",indoor:"mixed"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"סמטאות עתיקות עם דוכני אוכל, בתי קפה קטנים ואומנות רחוב.", location:"ביפו העתיקה, דרומית לתל אביב"},
+    {id:"citrus-picking-sharon", name:"מטע קטיף הדרים בשרון", region:"sharon", coords:[32.28,34.90], type:"food", tags:{kind:"pickyourown",indoor:"outdoor"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:true, group:["small","medium","large"], desc:"קטיף תפוזים ואשכוליות עצמי בעונת החורף, כולל סחיטת מיץ טרי.", location:"בעמק חפר, ליד מושב חופית"},
 
     // ===== WORKSHOPS =====
-    {id:"ceramics-ta", name:"סדנת קרמיקה משפחתית", region:"center", coords:[32.08,34.78], type:"workshop", tags:{kind:"ceramics",duration:"short"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"יצירה על גלגל חרס או בעבודת יד, כולל שריפה ואיסוף בהמשך."},
-    {id:"pizza-workshop", name:"סדנת פיצות לילדים", region:"center", coords:[32.06,34.80], type:"workshop", tags:{kind:"cooking",duration:"short"}, ages:["toddlers","kids"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"גלגול בצק ובחירת תוספות, ואז אפייה ואכילה באותו מפגש."},
-    {id:"chocolate-workshop-tzfat", name:"סדנת שוקולד בצפת", region:"north", coords:[32.96,35.50], type:"workshop", tags:{kind:"cooking",duration:"short"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"יציקת ועיטור פרלינים בסדנה קטנה בעיר העתיקה."},
-    {id:"art-museum-workshop", name:"סדנת אמנות במוזיאון תל אביב", region:"center", coords:[32.08,34.79], type:"workshop", tags:{kind:"art",duration:"short"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"סיור קצר בגלריה ואחריו יצירה בהשראת התערוכה הנוכחית."},
-    {id:"technoda", name:"סדנת מדע בטכנודע חולון", region:"center", coords:[32.02,34.78], type:"workshop", tags:{kind:"science",duration:"long"}, ages:["kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"ניסויים מודרכים לצד תערוכות מדע אינטראקטיביות למגע."},
-    {id:"candle-workshop-tzfat", name:"סדנת נרות בצפת", region:"north", coords:[32.965,35.495], type:"workshop", tags:{kind:"art",duration:"short"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"יציקת נרות צבעוניים בסגנון המסורתי של הרובע האמנים."},
-    {id:"robotics-sharon", name:"סדנת רובוטיקה לילדים", region:"sharon", coords:[32.19,34.87], type:"workshop", tags:{kind:"science",duration:"short"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"הרכבה ותכנות בסיסי של רובוט קטן במפגש קבוצתי קצר."},
-    {id:"yemeni-cooking-jlm", name:"סדנת בישול תימני בירושלים", region:"jerusalem", coords:[31.78,35.22], type:"workshop", tags:{kind:"cooking",duration:"long"}, ages:["teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"הכנת ג'חנון ומאפים תימניים מסורתיים בליווי מארחת מקומית."},
-    {id:"italian-cooking-ta", name:"סדנת בישול איטלקי משפחתית", region:"center", coords:[32.06,34.78], type:"workshop", tags:{kind:"cooking",duration:"long"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"הכנת פסטה טרייה מאפס יחד עם ההורים, כולל ארוחה משותפת בסיום."},
-    {id:"nature-art-galilee", name:"סדנת ציור בטבע בגליל", region:"north", coords:[32.93,35.30], type:"workshop", tags:{kind:"art",duration:"short"}, ages:["toddlers","kids","teens"], budget:"low", stroller:false, dogs:true, group:["small","medium"], desc:"ציור בחוץ בהשראת הנוף, עם חומרים המתאימים גם לידיים קטנות."},
-    {id:"beer-sheva-science", name:"סדנת מדע במוזיאון המדע באר שבע", region:"south", coords:[31.25,34.80], type:"workshop", tags:{kind:"science",duration:"long"}, ages:["kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"ניסויים ותערוכות אינטראקטיביות בתחומי פיזיקה ואקולוגיה מדברית."},
-    {id:"animal-workshop-jlm", name:"סדנת בעלי חיים בחוות לימוד", region:"jerusalem", coords:[31.80,35.15], type:"workshop", tags:{kind:"nature",duration:"short"}, ages:["toddlers","kids"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"מפגש מקרוב עם בעלי חיים משק ולמידה על טיפול וגידול."},
+    {id:"ceramics-ta", name:"סדנת קרמיקה משפחתית", region:"center", coords:[32.08,34.78], type:"workshop", tags:{kind:"ceramics",duration:"short"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"יצירה על גלגל חרס או בעבודת יד, כולל שריפה ואיסוף בהמשך.", location:"בעיר תל אביב"},
+    {id:"pizza-workshop", name:"סדנת פיצות לילדים", region:"center", coords:[32.06,34.80], type:"workshop", tags:{kind:"cooking",duration:"short"}, ages:["toddlers","kids"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"גלגול בצק ובחירת תוספות, ואז אפייה ואכילה באותו מפגש.", location:"בעיר תל אביב"},
+    {id:"chocolate-workshop-tzfat", name:"סדנת שוקולד בצפת", region:"north", coords:[32.96,35.50], type:"workshop", tags:{kind:"cooking",duration:"short"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"יציקת ועיטור פרלינים בסדנה קטנה בעיר העתיקה.", location:"בעיר העתיקה, צפת"},
+    {id:"art-museum-workshop", name:"סדנת אמנות במוזיאון תל אביב", region:"center", coords:[32.08,34.79], type:"workshop", tags:{kind:"art",duration:"short"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"סיור קצר בגלריה ואחריו יצירה בהשראת התערוכה הנוכחית.", location:"במוזיאון תל אביב לאמנות, שדרות שאול המלך", website:"https://www.tamuseum.org.il"},
+    {id:"technoda", name:"סדנת מדע בטכנודע, נוף הגליל", region:"north", coords:[32.70,35.32], type:"workshop", tags:{kind:"science",duration:"long"}, ages:["kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"ניסויים מודרכים לצד תערוכות מדע אינטראקטיביות למגע.", location:"בעיר נוף הגליל", website:"https://www.technoda.org.il"},
+    {id:"candle-workshop-tzfat", name:"סדנת נרות בצפת", region:"north", coords:[32.965,35.495], type:"workshop", tags:{kind:"art",duration:"short"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"יציקת נרות צבעוניים בסגנון המסורתי של הרובע האמנים.", location:"בעיר העתיקה, צפת"},
+    {id:"robotics-sharon", name:"סדנת רובוטיקה לילדים", region:"sharon", coords:[32.19,34.87], type:"workshop", tags:{kind:"science",duration:"short"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"הרכבה ותכנות בסיסי של רובוט קטן במפגש קבוצתי קצר.", location:"בעיר הוד השרון"},
+    {id:"yemeni-cooking-jlm", name:"סדנת בישול תימני בירושלים", region:"jerusalem", coords:[31.78,35.22], type:"workshop", tags:{kind:"cooking",duration:"long"}, ages:["teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"הכנת ג'חנון ומאפים תימניים מסורתיים בליווי מארחת מקומית.", location:"בשכונת נחלאות, ירושלים"},
+    {id:"italian-cooking-ta", name:"סדנת בישול איטלקי משפחתית", region:"center", coords:[32.06,34.78], type:"workshop", tags:{kind:"cooking",duration:"long"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"הכנת פסטה טרייה מאפס יחד עם ההורים, כולל ארוחה משותפת בסיום.", location:"בעיר תל אביב"},
+    {id:"nature-art-galilee", name:"סדנת ציור בטבע בגליל", region:"north", coords:[32.93,35.30], type:"workshop", tags:{kind:"art",duration:"short"}, ages:["toddlers","kids","teens"], budget:"low", stroller:false, dogs:true, group:["small","medium"], desc:"ציור בחוץ בהשראת הנוף, עם חומרים המתאימים גם לידיים קטנות.", location:"בגליל העליון, ליד ראש פינה"},
+    {id:"beer-sheva-science", name:"סדנת מדע במוזיאון המדע באר שבע", region:"south", coords:[31.25,34.80], type:"workshop", tags:{kind:"science",duration:"long"}, ages:["kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"ניסויים ותערוכות אינטראקטיביות בתחומי פיזיקה ואקולוגיה מדברית.", location:"בעיר באר שבע", website:"https://www.hamada.org.il"},
+    {id:"animal-workshop-jlm", name:"סדנת בעלי חיים בחוות לימוד", region:"jerusalem", coords:[31.80,35.15], type:"workshop", tags:{kind:"nature",duration:"short"}, ages:["toddlers","kids"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"מפגש מקרוב עם בעלי חיים משק ולמידה על טיפול וגידול.", location:"בהרי ירושלים, ליד מושב מטע"},
 
     // ===== EXPERIENCES =====
-    {id:"glamping-ramon", name:"גלמפינג במכתש רמון", region:"south", coords:[30.60,34.82], type:"experience", tags:{kind:"glamping",duration:"overnight"}, ages:["kids","teens"], budget:"high", stroller:false, dogs:true, group:["small","medium"], desc:"אוהלי בד מאובזרים על שפת המכתש, שילוב של קמפינג ונוחות מלונאית."},
-    {id:"jeep-ramon", name:"טיול ג'יפים במכתש רמון", region:"south", coords:[30.61,34.81], type:"experience", tags:{kind:"jeep",duration:"half"}, ages:["kids","teens"], budget:"high", stroller:false, dogs:false, group:["small","medium","large"], desc:"נסיעה מודרכת בשבילי עפר עם עצירות תצפית והסבר גיאולוגי."},
-    {id:"camel-judean-desert", name:"רכיבת גמלים במדבר יהודה", region:"arava", coords:[31.40,35.35], type:"experience", tags:{kind:"camel",duration:"half"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"רכיבה קצרה בין הרי המדבר, לרוב בשילוב עצירה לשתייה חמה באוהל בדואי."},
-    {id:"kinneret-boat", name:"שייט בכנרת", region:"north", coords:[32.83,35.60], type:"experience", tags:{kind:"boat",duration:"half"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"שיט רגוע על הכנרת באונייה גדולה, כולל מוזיקה ונוף לגולן."},
-    {id:"bedouin-overnight", name:"לינה באוהלים בדואים בנגב", region:"south", coords:[30.90,34.85], type:"experience", tags:{kind:"overnight",duration:"overnight"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"לינה פשוטה באוהל מסורתי עם ארוחה מקומית וסיפורי מדבר סביב מדורה."},
-    {id:"jeep-golan", name:"טיול ג'יפים ברמת הגולן", region:"north", coords:[33.05,35.75], type:"experience", tags:{kind:"jeep",duration:"full"}, ages:["kids","teens"], budget:"high", stroller:false, dogs:false, group:["small","medium","large"], desc:"מסלול יום מלא בין נחלים, יערות ותצפיות גבול עם מדריך מקומי."},
-    {id:"ranch-day-galilee", name:"יום בוקרים בחוות סוסים בגליל", region:"north", coords:[32.90,35.30], type:"experience", tags:{kind:"camel",duration:"full"}, ages:["kids","teens"], budget:"high", stroller:false, dogs:true, group:["small","medium"], desc:"יום שלם בחוות בוקרים עם רכיבה, סדנת לאסו וארוחת שטח."},
-    {id:"sunset-cruise-tlv", name:"שייט שקיעה מנמל תל אביב", region:"center", coords:[32.10,34.77], type:"experience", tags:{kind:"boat",duration:"half"}, ages:["kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"שיט קצר לאורך החוף בשעת השקיעה, אווירה נעימה לכל המשפחה."},
-    {id:"camping-benshemen", name:"קמפינג משפחתי ביער בן שמן", region:"center", coords:[31.94,34.91], type:"experience", tags:{kind:"overnight",duration:"overnight"}, ages:["kids","teens"], budget:"free", stroller:false, dogs:true, group:["small","medium","large"], desc:"שטח קמפינג מוסדר בתוך היער, פופולרי לחופשות קצרות בטבע קרוב לבית."},
-    {id:"jeep-arava", name:"טיול ג'יפים בערבה", region:"arava", coords:[30.40,35.10], type:"experience", tags:{kind:"jeep",duration:"half"}, ages:["kids","teens"], budget:"high", stroller:false, dogs:false, group:["small","medium","large"], desc:"נסיעה בין מכתשים קטנים ותצורות סלע מדבריות, עם עצירות תצפית."},
-    {id:"bedouin-arad", name:"לינה בכפר בדואי ליד ערד", region:"south", coords:[31.25,35.15], type:"experience", tags:{kind:"overnight",duration:"overnight"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"אירוח מסורתי עם ארוחה בדואית וסיפורי מדבר לאור המדורה."},
-    {id:"akko-fishing-boat", name:"שייט דייגים בעכו", region:"north", coords:[32.92,35.06], type:"experience", tags:{kind:"boat",duration:"half"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium"], desc:"שיט קצר בנמל העתיק עם סיפורים על חיי הדייגים המקומיים."},
-    {id:"horseback-sharon", name:"רכיבת סוסים בחוף השרון", region:"sharon", coords:[32.30,34.85], type:"experience", tags:{kind:"camel",duration:"half"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"רכיבה מודרכת על חוף הים בשקיעה, מתאים גם לרוכבים מתחילים."},
-    {id:"glamping-galilee", name:"גלמפינג בגליל העליון", region:"north", coords:[33.03,35.45], type:"experience", tags:{kind:"glamping",duration:"overnight"}, ages:["kids","teens"], budget:"high", stroller:false, dogs:true, group:["small","medium"], desc:"אוהלי יוקרה בין הרי הגליל עם נוף פתוח וארוחת בוקר כפרית."}
+    {id:"glamping-ramon", name:"גלמפינג במכתש רמון", region:"south", coords:[30.60,34.82], type:"experience", tags:{kind:"glamping",duration:"overnight"}, ages:["kids","teens"], budget:"high", stroller:false, dogs:true, group:["small","medium"], desc:"אוהלי בד מאובזרים על שפת המכתש, שילוב של קמפינג ונוחות מלונאית.", location:"באזור מצפה רמון"},
+    {id:"jeep-ramon", name:"טיול ג'יפים במכתש רמון", region:"south", coords:[30.61,34.81], type:"experience", tags:{kind:"jeep",duration:"half"}, ages:["kids","teens"], budget:"high", stroller:false, dogs:false, group:["small","medium","large"], desc:"נסיעה מודרכת בשבילי עפר עם עצירות תצפית והסבר גיאולוגי.", location:"באזור מצפה רמון"},
+    {id:"camel-judean-desert", name:"רכיבת גמלים במדבר יהודה", region:"arava", coords:[31.40,35.35], type:"experience", tags:{kind:"camel",duration:"half"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"רכיבה קצרה בין הרי המדבר, לרוב בשילוב עצירה לשתייה חמה באוהל בדואי.", location:"במדבר יהודה, ליד מצוקי דרגות"},
+    {id:"kinneret-boat", name:"שייט בכנרת", region:"north", coords:[32.83,35.60], type:"experience", tags:{kind:"boat",duration:"half"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"שיט רגוע על הכנרת באונייה גדולה, כולל מוזיקה ונוף לגולן.", location:"מנמל טבריה, לחופי הכנרת"},
+    {id:"bedouin-overnight", name:"לינה באוהלים בדואים בנגב", region:"south", coords:[30.90,34.85], type:"experience", tags:{kind:"overnight",duration:"overnight"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"לינה פשוטה באוהל מסורתי עם ארוחה מקומית וסיפורי מדבר סביב מדורה.", location:"בנגב, ליד רהט או להבים"},
+    {id:"jeep-golan", name:"טיול ג'יפים ברמת הגולן", region:"north", coords:[33.05,35.75], type:"experience", tags:{kind:"jeep",duration:"full"}, ages:["kids","teens"], budget:"high", stroller:false, dogs:false, group:["small","medium","large"], desc:"מסלול יום מלא בין נחלים, יערות ותצפיות גבול עם מדריך מקומי.", location:"ברמת הגולן"},
+    {id:"ranch-day-galilee", name:"יום בוקרים בחוות סוסים בגליל", region:"north", coords:[32.90,35.30], type:"experience", tags:{kind:"camel",duration:"full"}, ages:["kids","teens"], budget:"high", stroller:false, dogs:true, group:["small","medium"], desc:"יום שלם בחוות בוקרים עם רכיבה, סדנת לאסו וארוחת שטח.", location:"בגליל העליון, ליד מושב עמיעד"},
+    {id:"sunset-cruise-tlv", name:"שייט שקיעה מנמל תל אביב", region:"center", coords:[32.10,34.77], type:"experience", tags:{kind:"boat",duration:"half"}, ages:["kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium","large"], desc:"שיט קצר לאורך החוף בשעת השקיעה, אווירה נעימה לכל המשפחה.", location:"מנמל תל אביב"},
+    {id:"camping-benshemen", name:"קמפינג משפחתי ביער בן שמן", region:"center", coords:[31.94,34.91], type:"experience", tags:{kind:"overnight",duration:"overnight"}, ages:["kids","teens"], budget:"free", stroller:false, dogs:true, group:["small","medium","large"], desc:"שטח קמפינג מוסדר בתוך היער, פופולרי לחופשות קצרות בטבע קרוב לבית.", location:"ביער בן שמן"},
+    {id:"jeep-arava", name:"טיול ג'יפים בערבה", region:"arava", coords:[30.40,35.10], type:"experience", tags:{kind:"jeep",duration:"half"}, ages:["kids","teens"], budget:"high", stroller:false, dogs:false, group:["small","medium","large"], desc:"נסיעה בין מכתשים קטנים ותצורות סלע מדבריות, עם עצירות תצפית.", location:"בערבה, ליד חצבה"},
+    {id:"bedouin-arad", name:"לינה בכפר בדואי ליד ערד", region:"south", coords:[31.25,35.15], type:"experience", tags:{kind:"overnight",duration:"overnight"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium","large"], desc:"אירוח מסורתי עם ארוחה בדואית וסיפורי מדבר לאור המדורה.", location:"ליד העיר ערד"},
+    {id:"akko-fishing-boat", name:"שייט דייגים בעכו", region:"north", coords:[32.92,35.06], type:"experience", tags:{kind:"boat",duration:"half"}, ages:["toddlers","kids","teens"], budget:"low", stroller:true, dogs:false, group:["small","medium"], desc:"שיט קצר בנמל העתיק עם סיפורים על חיי הדייגים המקומיים.", location:"בנמל העתיק, עכו"},
+    {id:"horseback-sharon", name:"רכיבת סוסים בחוף השרון", region:"sharon", coords:[32.30,34.85], type:"experience", tags:{kind:"camel",duration:"half"}, ages:["kids","teens"], budget:"low", stroller:false, dogs:false, group:["small","medium"], desc:"רכיבה מודרכת על חוף הים בשקיעה, מתאים גם לרוכבים מתחילים.", location:"בחוף השרון, ליד בית ינאי"},
+    {id:"glamping-galilee", name:"גלמפינג בגליל העליון", region:"north", coords:[33.03,35.45], type:"experience", tags:{kind:"glamping",duration:"overnight"}, ages:["kids","teens"], budget:"high", stroller:false, dogs:true, group:["small","medium"], desc:"אוהלי יוקרה בין הרי הגליל עם נוף פתוח וארוחת בוקר כפרית.", location:"בגליל העליון, ליד ראש פינה"}
   ];
 
   const LS_CUSTOM = "family-activities-custom-v2";
@@ -441,7 +464,7 @@
 
   const state = {
     locationMode:null, regions:[], userCoords:null, radius:50,
-    type:null, subcat:{}, global:{ages:[],budget:[],group:[]}, strollerOnly:false, dogsOnly:false,
+    types:[], subcatByType:{}, global:{ages:[],budget:[],group:[]}, strollerOnly:false, dogsOnly:false,
     view:"list"
   };
 
@@ -509,20 +532,27 @@
     radiusButtons.appendChild(b);
   });
 
-  // ---------- STEP 2: TYPE ----------
+  // ---------- STEP 2: TYPE (multi-select) ----------
   const typeButtonsEl = document.getElementById("type-buttons");
   Object.entries(TYPES).forEach(([val,info])=>{
     const b = document.createElement("button");
     b.className = "type-btn";
     b.innerHTML = '<span class="ic">'+info.icon+'</span><span class="lbl">'+info.label+'</span>';
     b.addEventListener("click", ()=>{
-      state.type = val; state.subcat = {};
-      QUESTIONS[val].forEach(q=>{ state.subcat[q.key] = []; });
-      [...typeButtonsEl.children].forEach(c=>c.classList.remove("active"));
-      b.classList.add("active");
-      document.getElementById("step-subcat").style.display = "block";
-      renderSubcatQuestions();
-      renderGlobalFilters();
+      const idx = state.types.indexOf(val);
+      if(idx === -1){
+        state.types.push(val);
+        state.subcatByType[val] = {};
+        QUESTIONS[val].forEach(q=>{ state.subcatByType[val][q.key] = []; });
+        b.classList.add("active");
+      } else {
+        state.types.splice(idx,1);
+        delete state.subcatByType[val];
+        b.classList.remove("active");
+      }
+      const hasTypes = state.types.length > 0;
+      document.getElementById("step-subcat").style.display = hasTypes ? "block" : "none";
+      if(hasTypes){ renderSubcatQuestions(); renderGlobalFilters(); }
       renderResults();
     });
     typeButtonsEl.appendChild(b);
@@ -544,19 +574,30 @@
     });
   }
 
-  // ---------- STEP 3: SUBCATEGORIES ----------
+  // ---------- STEP 3: SUBCATEGORIES (one block per selected type) ----------
   function renderSubcatQuestions(){
     const wrap = document.getElementById("subcat-questions");
     wrap.innerHTML = "";
-    document.getElementById("subcat-title").textContent = TYPES[state.type].label + " — עוד כמה פרטים";
-    QUESTIONS[state.type].forEach(q=>{
-      const group = document.createElement("div"); group.className = "subcat-group";
-      const lbl = document.createElement("div"); lbl.className = "qlabel"; lbl.textContent = q.label + " (אפשר לבחור כמה)";
-      group.appendChild(lbl);
-      const grid = document.createElement("div"); grid.className = "btn-grid";
-      multiToggleGroup(grid, ()=>state.subcat[q.key], q.options, renderResults);
-      group.appendChild(grid);
-      wrap.appendChild(group);
+    document.getElementById("subcat-title").textContent = "עוד כמה פרטים לפי סוג";
+    state.types.forEach(type=>{
+      const typeBlock = document.createElement("div");
+      typeBlock.style.marginBottom = "16px";
+      typeBlock.style.paddingBottom = "12px";
+      typeBlock.style.borderBottom = "1px dashed var(--line)";
+      const typeTitle = document.createElement("div");
+      typeTitle.style.fontWeight = "700"; typeTitle.style.fontSize = "14.5px"; typeTitle.style.marginBottom = "8px";
+      typeTitle.textContent = TYPES[type].icon + " " + TYPES[type].label;
+      typeBlock.appendChild(typeTitle);
+      QUESTIONS[type].forEach(q=>{
+        const group = document.createElement("div"); group.className = "subcat-group";
+        const lbl = document.createElement("div"); lbl.className = "qlabel"; lbl.textContent = q.label + " (אפשר לבחור כמה)";
+        group.appendChild(lbl);
+        const grid = document.createElement("div"); grid.className = "btn-grid";
+        multiToggleGroup(grid, ()=>state.subcatByType[type][q.key], q.options, renderResults);
+        group.appendChild(grid);
+        typeBlock.appendChild(group);
+      });
+      wrap.appendChild(typeBlock);
     });
   }
 
@@ -619,9 +660,10 @@
     return null;
   }
   function matchesSubcat(a){
-    if(a.type !== state.type) return false;
-    return QUESTIONS[state.type].every(q=>{
-      const chosen = state.subcat[q.key] || [];
+    if(!state.types.includes(a.type)) return false;
+    const filters = state.subcatByType[a.type] || {};
+    return QUESTIONS[a.type].every(q=>{
+      const chosen = filters[q.key] || [];
       if(chosen.length === 0) return true;
       return chosen.includes(a.tags[q.key]);
     });
@@ -641,11 +683,55 @@
     return opt ? opt[1] : val;
   }
 
+  function globalLabel(key, val){
+    const q = GLOBAL_MULTI.find(q=>q.key===key);
+    if(!q) return val;
+    const opt = q.options.find(o=>o[0]===val);
+    return opt ? opt[1] : val;
+  }
+
+  const detailModal = document.getElementById("detail-modal");
+  const detailContent = document.getElementById("detail-content");
+  function openDetail(a){
+    let html = "";
+    html += '<h3 class="detail-title">'+a.name+'</h3>';
+    html += '<div class="detail-region">'+TYPES[a.type].icon+' '+TYPES[a.type].label+' · '+(REGIONS[a.region]||"")+'</div>';
+
+    html += '<div class="detail-section"><h4>מיקום</h4><p class="detail-desc">'+(a.location || REGIONS[a.region] || "")+'</p></div>';
+
+    if(a.desc){
+      html += '<div class="detail-section"><h4>על המקום</h4><p class="detail-desc">'+a.desc+'</p></div>';
+    }
+
+    let tagsHtml = "";
+    Object.entries(a.tags||{}).forEach(([k,v])=>{ tagsHtml += '<span class="tag">'+tagLabel(a.type,k,v)+'</span>'; });
+    (a.ages||[]).forEach(v=> tagsHtml += '<span class="tag">'+globalLabel("ages",v)+'</span>');
+    if(a.budget) tagsHtml += '<span class="tag">'+globalLabel("budget",a.budget)+'</span>';
+    (a.group||[]).forEach(v=> tagsHtml += '<span class="tag">'+globalLabel("group",v)+'</span>');
+    if(a.stroller) tagsHtml += '<span class="tag">♿ נגיש לעגלה/כ.גלגלים</span>';
+    if(a.dogs) tagsHtml += '<span class="tag">🐕 ידידותי לכלבים</span>';
+    html += '<div class="detail-section"><h4>מאפייני המקום</h4><div class="detail-tags">'+tagsHtml+'</div></div>';
+
+    if(a.phone || a.website){
+      html += '<div class="detail-section detail-contact"><h4>יצירת קשר</h4>';
+      if(a.phone) html += '<div>📞 <a href="tel:'+a.phone.replace(/\*/g,'')+'">'+a.phone+'</a></div>';
+      if(a.website) html += '<div>🔗 <a href="'+a.website+'" target="_blank" rel="noopener">אתר האינטרנט</a></div>';
+      html += '</div>';
+    }
+
+    html += '<p class="detail-note">הפרטים נאספו לנוחותכם וייתכנו אי-דיוקים או שינויים — מומלץ לוודא שעות פתיחה, מחירים והרשמה מראש לפני היציאה.</p>';
+
+    detailContent.innerHTML = html;
+    detailModal.style.display = "flex";
+  }
+  document.getElementById("detail-close").addEventListener("click", ()=> detailModal.style.display = "none");
+  detailModal.addEventListener("click", (e)=>{ if(e.target === detailModal) detailModal.style.display = "none"; });
+
   let currentResults = [];
 
   function renderResults(){
     const section = document.getElementById("results-section");
-    if(!state.type){ section.style.display = "none"; return; }
+    if(state.types.length === 0){ section.style.display = "none"; return; }
     section.style.display = "block";
 
     let list = allActivities().filter(a=> matchesLocation(a) && matchesSubcat(a) && matchesGlobal(a));
@@ -705,6 +791,11 @@
       div.appendChild(metaEl);
     }
 
+    const detailsBtn = document.createElement("button");
+    detailsBtn.className = "details-link"; detailsBtn.textContent = "פרטים נוספים ›";
+    detailsBtn.addEventListener("click", ()=> openDetail(a));
+    div.appendChild(detailsBtn);
+
     const bottom = document.createElement("div"); bottom.className = "a-bottom";
     const leftBit = document.createElement("span");
     const d = activityDistance(a);
@@ -737,7 +828,7 @@
 
   document.getElementById("reset-btn").addEventListener("click", ()=>{
     state.locationMode = null; state.regions = []; state.userCoords = null; state.radius = 50;
-    state.type = null; state.subcat = {}; state.global = {ages:[],budget:[],group:[]};
+    state.types = []; state.subcatByType = {}; state.global = {ages:[],budget:[],group:[]};
     state.strollerOnly = false; state.dogsOnly = false; state.view = "list";
     [...locModeButtons.children].forEach(c=>c.classList.remove("active"));
     [...regionButtons.children].forEach(c=>c.classList.remove("active"));
@@ -764,9 +855,41 @@
     [35.78,32.90],[35.80,33.13],[35.80,33.27],[35.57,33.28],[35.10,33.09]
   ];
 
+  // reference cities/towns for orientation: [name, lon, lat, side] side: "l"=label to the left, "r"=to the right
+  const CITIES = [
+    ["קריית שמונה", 35.57, 33.21, "r"],
+    ["צפת", 35.50, 32.96, "r"],
+    ["טבריה", 35.53, 32.79, "r"],
+    ["עכו", 35.07, 32.93, "l"],
+    ["חיפה", 34.99, 32.79, "l"],
+    ["נצרת", 35.30, 32.70, "r"],
+    ["נתניה", 34.86, 32.33, "l"],
+    ["כפר סבא", 34.91, 32.18, "r"],
+    ["תל אביב - יפו", 34.78, 32.08, "l"],
+    ["ירושלים", 35.22, 31.78, "r"],
+    ["ראשון לציון", 34.80, 31.97, "r"],
+    ["רחובות", 34.81, 31.89, "r"],
+    ["אשדוד", 34.65, 31.80, "l"],
+    ["אשקלון", 34.57, 31.67, "l"],
+    ["באר שבע", 34.79, 31.25, "r"],
+    ["ערד", 35.21, 31.26, "r"],
+    ["מצפה רמון", 34.80, 30.61, "r"],
+    ["אילת", 34.95, 29.56, "r"]
+  ];
+
   function renderMap(list){
     const container = document.getElementById("map-container");
     const pts = BORDER.map(([lon,lat])=>{ const p=project(lon,lat); return p.x.toFixed(1)+","+p.y.toFixed(1); }).join(" ");
+    let cityMarkers = "";
+    CITIES.forEach(([name,lon,lat,side])=>{
+      const p = project(lon,lat);
+      const dx = side === "r" ? 6 : -6;
+      const anchor = side === "r" ? "start" : "end";
+      cityMarkers += '<g class="map-city">'+
+        '<circle cx="'+p.x.toFixed(1)+'" cy="'+p.y.toFixed(1)+'" r="1.8" fill="var(--ink-soft)"/>'+
+        '<text x="'+(p.x+dx).toFixed(1)+'" y="'+(p.y+3).toFixed(1)+'" font-size="8" fill="var(--ink-soft)" text-anchor="'+anchor+'" font-family="Heebo,sans-serif">'+name+'</text>'+
+        '</g>';
+    });
     let markers = "";
     list.forEach(a=>{
       if(!a.coords) return;
@@ -779,6 +902,7 @@
     container.innerHTML =
       '<svg viewBox="0 0 '+MAP_W+' '+MAP_H+'" xmlns="http://www.w3.org/2000/svg">'+
       '<polygon points="'+pts+'" fill="var(--stone-line)" fill-opacity="0.5" stroke="var(--olive)" stroke-width="1.2"/>'+
+      cityMarkers+
       markers+
       '</svg>';
     container.querySelectorAll(".map-dot").forEach(dot=>{
