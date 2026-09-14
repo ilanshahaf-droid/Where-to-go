@@ -258,7 +258,8 @@
     adventure:{label:"ספורט / אתגר", icon:"🧗", color:"var(--rust)"},
     food:{label:"בילוי עם אוכל", icon:"🍇", color:"var(--plum)"},
     workshop:{label:"סדנאות", icon:"🎨", color:"#4c7a94"},
-    experience:{label:"חוויה מיוחדת", icon:"🏕️", color:"#8a6d1f"}
+    experience:{label:"חוויה מיוחדת", icon:"🏕️", color:"#8a6d1f"},
+    other:{label:"אחר", icon:"📌", color:"#6b6b6b"}
   };
 
   const QUESTIONS = {
@@ -292,7 +293,8 @@
     experience:[
       {key:"kind", label:"סוג החוויה", options:[["glamping","גלמפינג"],["jeep","טיול ג'יפים"],["camel","רכיבת גמלים / סוסים"],["boat","שייט"],["overnight","לינה בשטח"]]},
       {key:"duration", label:"משך", options:[["half","חצי יום"],["full","יום שלם"],["overnight","כולל לינה"]]}
-    ]
+    ],
+    other:[]
   };
 
   const GLOBAL_MULTI = [
@@ -652,7 +654,9 @@
       html += '<img class="detail-img" src="'+a.image+'" alt="'+a.name+'" onerror="this.remove()">';
     }
     html += '<h3 class="detail-title">'+a.name+'</h3>';
-    html += '<div class="detail-region">'+TYPES[a.type].icon+' '+TYPES[a.type].label+' · '+(REGIONS[a.region]||"")+'</div>';
+    const typeIcon = a.customTypeLabel ? "📌" : TYPES[a.type].icon;
+    const typeLabelText = a.customTypeLabel || TYPES[a.type].label;
+    html += '<div class="detail-region">'+typeIcon+' '+typeLabelText+' · '+(REGIONS[a.region]||"")+'</div>';
 
     html += '<div class="detail-section"><h4>מיקום</h4><p class="detail-desc">'+(a.location || REGIONS[a.region] || "")+'</p></div>';
 
@@ -919,6 +923,13 @@
   function renderCfSubcats(){
     cfSubcats.innerHTML = "";
     const type = cfType.value;
+
+    if(type === "other"){
+      const otherRow = document.createElement("div"); otherRow.className = "form-row";
+      otherRow.innerHTML = '<label>איך לתייג את סוג הפעילות? (לא חובה)</label><input type="text" id="cf-other-label" placeholder="למשל: יום הולדת, מסעדה, חוג...">';
+      cfSubcats.appendChild(otherRow);
+    }
+
     QUESTIONS[type].forEach(q=>{
       const row = document.createElement("div"); row.className = "form-row";
       const lbl = document.createElement("label"); lbl.textContent = q.label;
@@ -948,6 +959,16 @@
       '<div class="check-row"><input type="checkbox" id="cf-stroller"><label for="cf-stroller">נגיש לעגלה / כיסא גלגלים</label></div>'+
       '<div class="check-row"><input type="checkbox" id="cf-dogs"><label for="cf-dogs">ידידותי לכלבים</label></div>';
     cfSubcats.appendChild(boolRow);
+
+    const contactRow = document.createElement("div"); contactRow.className = "form-row";
+    contactRow.innerHTML =
+      '<label>קישור לאתר (לא חובה)</label><input type="text" id="cf-website" placeholder="https://...">';
+    cfSubcats.appendChild(contactRow);
+
+    const phoneRow = document.createElement("div"); phoneRow.className = "form-row";
+    phoneRow.innerHTML =
+      '<label>פרטי יצירת קשר / טלפון (לא חובה)</label><input type="text" id="cf-phone" placeholder="טלפון, אימייל, או כל דרך אחרת ליצור קשר">';
+    cfSubcats.appendChild(phoneRow);
   }
   cfType.addEventListener("change", renderCfSubcats);
   renderCfSubcats();
@@ -963,16 +984,27 @@
     const stroller = document.getElementById("cf-stroller").checked;
     const dogs = document.getElementById("cf-dogs").checked;
     const image = document.getElementById("cf-image").value.trim();
+    const website = document.getElementById("cf-website").value.trim();
+    const phone = document.getElementById("cf-phone").value.trim();
     const newActivity = {
       id: "custom-" + Date.now(), name, region: cfRegion.value, type, tags,
       ages, budget, stroller, dogs, group:["small","medium","large"],
       desc: document.getElementById("cf-desc").value.trim(), custom: true
     };
+    if(type === "other"){
+      const otherLabelEl = document.getElementById("cf-other-label");
+      const otherLabel = otherLabelEl ? otherLabelEl.value.trim() : "";
+      if(otherLabel) newActivity.customTypeLabel = otherLabel;
+    }
     if(image) newActivity.image = image;
+    if(website) newActivity.website = website;
+    if(phone) newActivity.phone = phone;
     customActivities.push(newActivity);
     saveCustom(customActivities);
     document.getElementById("cf-name").value = "";
     document.getElementById("cf-image").value = "";
+    document.getElementById("cf-website").value = "";
+    document.getElementById("cf-phone").value = "";
     document.getElementById("cf-desc").value = "";
     document.getElementById("add-form").removeAttribute("open");
     renderResults(); renderFavorites();
