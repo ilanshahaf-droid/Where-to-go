@@ -935,7 +935,15 @@
       const lbl = document.createElement("label"); lbl.textContent = q.label;
       const sel = document.createElement("select"); sel.dataset.key = q.key;
       q.options.forEach(([val,text])=>{ const o = document.createElement("option"); o.value = val; o.textContent = text; sel.appendChild(o); });
-      row.appendChild(lbl); row.appendChild(sel);
+      const otherOpt = document.createElement("option"); otherOpt.value = "__other__"; otherOpt.textContent = "אחר (הזנה ידנית)";
+      sel.appendChild(otherOpt);
+      const manualInput = document.createElement("input");
+      manualInput.type = "text"; manualInput.placeholder = "הקלידו כאן את הערך המדויק";
+      manualInput.dataset.manualFor = q.key;
+      manualInput.style.marginTop = "6px";
+      manualInput.style.display = "none";
+      sel.addEventListener("change", ()=>{ manualInput.style.display = sel.value === "__other__" ? "block" : "none"; });
+      row.appendChild(lbl); row.appendChild(sel); row.appendChild(manualInput);
       cfSubcats.appendChild(row);
     });
     const ageRow = document.createElement("div"); ageRow.className = "form-row";
@@ -978,7 +986,14 @@
     if(!name){ document.getElementById("cf-name").focus(); return; }
     const type = cfType.value;
     const tags = {};
-    cfSubcats.querySelectorAll("select[data-key]").forEach(sel=>{ tags[sel.dataset.key] = sel.value; });
+    cfSubcats.querySelectorAll("select[data-key]").forEach(sel=>{
+      if(sel.value === "__other__"){
+        const manual = cfSubcats.querySelector('[data-manual-for="'+sel.dataset.key+'"]');
+        tags[sel.dataset.key] = (manual && manual.value.trim()) ? manual.value.trim() : "";
+      } else {
+        tags[sel.dataset.key] = sel.value;
+      }
+    });
     const ages = [...cfSubcats.querySelectorAll('[data-role="cf-ages"] .opt-btn.active')].map(b=>b.dataset.val);
     const budget = cfSubcats.querySelector('[data-role="cf-budget"]').value;
     const stroller = document.getElementById("cf-stroller").checked;
