@@ -251,8 +251,13 @@
       <div class="form-row"><label>סוג פעילות (אפשר לבחור כמה)</label><div class="btn-grid" id="cf-type"></div></div>
       <div id="cf-subcats"></div>
       <div id="cf-multi"></div>
+      <div class="form-row"><label>קואורדינטות (לא חובה)</label><input type="text" id="cf-coords" placeholder="למשל: 32.79, 35.53 — מאפשר ניווט מדויק והצגה במפה"></div>
       <div class="form-row"><label>תיאור קצר (לא חובה)</label><textarea id="cf-desc" placeholder="פרטים שיעזרו לכם לזכור למה בחרתם במקום הזה"></textarea></div>
       <button class="save-btn" id="cf-save">שמירת הפעילות</button>
+      <div style="margin-top:10px; display:flex; gap:16px;">
+        <button type="button" class="link-btn" id="cf-cancel" style="display:none;">ביטול עריכה</button>
+        <button type="button" class="link-btn" id="cf-restore" style="display:none;">שחזור למקור</button>
+      </div>
     </div>
   </details>
 
@@ -443,9 +448,14 @@
   function loadFavs(){ try{ return JSON.parse(localStorage.getItem(LS_FAV)) || []; }catch(e){ return []; } }
   function saveFavs(list){ try{ localStorage.setItem(LS_FAV, JSON.stringify(list)); }catch(e){} }
 
+  const LS_OVR = "family-activities-overrides-v1";
+  function loadOvr(){ try{ return JSON.parse(localStorage.getItem(LS_OVR)) || {}; }catch(e){ return {}; } }
+  function saveOvr(o){ try{ localStorage.setItem(LS_OVR, JSON.stringify(o)); }catch(e){} }
+  let overrides = loadOvr();
   let customActivities = loadCustom();
   let favorites = loadFavs();
-  function allActivities(){ return BASE_ACTIVITIES.concat(customActivities); }
+  function allActivities(){ return BASE_ACTIVITIES.map(a=> overrides[a.id] || a).concat(customActivities); }
+  function isUserText(a){ return !!(a.custom || a.edited); }
 
   function distanceKm(lat1,lon1,lat2,lon2){
     const R=6371;
@@ -714,7 +724,7 @@
       const su = safeUrl(u);
       if(su) html += '<img class="detail-img" src="'+esc(su)+'" alt="'+esc(a.name)+'" onerror="this.remove()">';
     });
-    html += '<h3 class="detail-title">'+(a.custom ? esc(a.name) : a.name)+'</h3>';
+    html += '<h3 class="detail-title">'+(isUserText(a) ? esc(a.name) : a.name)+'</h3>';
     const tList = actTypes(a).filter(t=>TYPES[t]);
     const typeIcon = a.customTypeLabel ? "📌" : TYPES[a.type].icon;
     const typeLabelText = a.customTypeLabel || tList.map(t=>TYPES[t].label).join(" / ");
@@ -722,10 +732,10 @@
 
     const locs = actList(a,"locations","location");
     html += '<div class="detail-section"><h4>'+(locs.length>1 ? "מיקומים" : "מיקום")+'</h4>'+
-      (locs.length ? locs.map(l=>'<p class="detail-desc">'+(a.custom ? esc(l) : l)+'</p>').join("") : '<p class="detail-desc">'+(REGIONS[a.region] || "")+'</p>')+'</div>';
+      (locs.length ? locs.map(l=>'<p class="detail-desc">'+(isUserText(a) ? esc(l) : l)+'</p>').join("") : '<p class="detail-desc">'+(REGIONS[a.region] || "")+'</p>')+'</div>';
 
     if(a.desc){
-      html += '<div class="detail-section"><h4>על המקום</h4><p class="detail-desc">'+(a.custom ? esc(a.desc) : a.desc)+'</p></div>';
+      html += '<div class="detail-section"><h4>על המקום</h4><p class="detail-desc">'+(isUserText(a) ? esc(a.desc) : a.desc)+'</p></div>';
     }
 
     let tagsHtml = "";
@@ -746,7 +756,7 @@
       });
       sitesL.forEach((w,i)=>{
         const su = safeUrl(w);
-        if(su) html += '<div>🔗 <a href="'+esc(su)+'" target="_blank" rel="noopener">'+(a.custom ? esc(w.replace(/^https?:\/\//i,"")) : "אתר האינטרנט הרשמי")+'</a></div>';
+        if(su) html += '<div>🔗 <a href="'+esc(su)+'" target="_blank" rel="noopener">'+(isUserText(a) ? esc(w.replace(/^https?:\/\//i,"")) : "אתר האינטרנט הרשמי")+'</a></div>';
         else html += '<div>🔗 '+esc(w)+'</div>';
       });
       extrasL.forEach(x=> html += '<div><strong>'+esc(x.label)+':</strong> '+esc(x.value)+'</div>');
@@ -754,9 +764,27 @@
       html += '</div>';
     }
 
+    // navigation
+    const dests = [];
+    const hasCoords = Array.isArray(a.coords) && a.coords.length === 2;
+    if(hasCoords && locs.length <= 1) dests.push({label:a.name, ll:a.coords[0]+","+a.coords[1]});
+    else if(locs.length){ locs.forEach(l=> dests.push({label: locs.length>1 ? a.name+" – "+l : a.name, q: a.name+" "+l})); }
+    else dests.push({label:a.name, q: a.name+" "+(REGIONS[a.region]||"")});
+    html += '<div class="detail-section detail-contact"><h4>ניווט</h4>';
+    dests.forEach(d=>{
+      const waze = d.ll ? 'https://waze.com/ul?ll='+encodeURIComponent(d.ll)+'&navigate=yes&zoom=17' : 'https://waze.com/ul?q='+encodeURIComponent(d.q)+'&navigate=yes';
+      const gm = d.ll ? 'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(d.ll) : 'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(d.q);
+      html += '<div>🚗 <a href="'+esc(waze)+'" target="_blank" rel="noopener">נווט ל'+esc(d.label)+' בוויז</a></div>';
+      html += '<div>📍 <a href="'+esc(gm)+'" target="_blank" rel="noopener">נווט ל'+esc(d.label)+' בגוגל מפות</a></div>';
+    });
+    html += '</div>';
+
+    html += '<div class="detail-section"><button type="button" class="link-btn" id="detail-edit-btn">✏️ עריכת הפעילות</button></div>';
     html += '<p class="detail-note">הפרטים נאספו לנוחותכם וייתכנו אי-דיוקים או שינויים — מומלץ לוודא שעות פתיחה, מחירים והרשמה מראש לפני היציאה.</p>';
 
     detailContent.innerHTML = html;
+    const eb = document.getElementById("detail-edit-btn");
+    if(eb) eb.addEventListener("click", ()=> startEdit(a));
     detailModal.style.display = "flex";
   }
   document.getElementById("detail-close").addEventListener("click", ()=> detailModal.style.display = "none");
@@ -856,6 +884,9 @@
         saveFavs(favorites);
         renderResults(); renderFavorites(); renderSearch();
       });
+      const editBtn = document.createElement("button"); editBtn.className = "del-btn"; editBtn.textContent = "עריכה"; editBtn.style.marginInlineEnd = "10px";
+      editBtn.addEventListener("click", ()=> startEdit(a));
+      leftBit.appendChild(editBtn);
       leftBit.appendChild(delBtn);
     }
     const favBtn = document.createElement("button"); favBtn.className = "fav-btn";
@@ -1208,6 +1239,91 @@
   renderCfCommon();
   renderCfTypeSubs();
 
+  // ---- edit mode ----
+  let editingId = null;
+  const addForm = document.getElementById("add-form");
+  const addSummary = addForm.querySelector("summary");
+  function fillMulti(key, values){
+    const def = MULTI_DEFS.find(d=>d.key===key);
+    const list = cfMulti.querySelector('[data-multi="'+key+'"] .multi-list');
+    list.innerHTML = "";
+    if(!values.length){ addMultiRow(list, def, false); return; }
+    values.forEach(v=>{
+      addMultiRow(list, def, false);
+      const row = list.lastElementChild;
+      if(def.pair){ row.querySelector('[data-part="label"]').value = v.label || ""; row.querySelector('[data-part="value"]').value = v.value || ""; }
+      else row.querySelector('[data-part="value"]').value = v;
+    });
+  }
+  function setEditUi(on){
+    document.getElementById("cf-cancel").style.display = on ? "inline-block" : "none";
+    document.getElementById("cf-save").textContent = on ? "שמירת שינויים" : "שמירת הפעילות";
+    addSummary.textContent = on ? "עריכת פעילות" : "הוספת פעילות משלי";
+    const restore = document.getElementById("cf-restore");
+    restore.style.display = (on && overrides[editingId]) ? "inline-block" : "none";
+  }
+  function resetForm(){
+    editingId = null;
+    document.getElementById("cf-name").value = "";
+    document.getElementById("cf-desc").value = "";
+    document.getElementById("cf-coords").value = "";
+    resetMulti();
+    cfSubcats.querySelectorAll(".opt-btn.active").forEach(b=>b.classList.remove("active"));
+    cfSubcats.querySelectorAll("[data-manual]").forEach(m=>{ m.value = ""; });
+    cfSubcats.querySelectorAll("[data-manual-wrap]").forEach(m=>{ m.style.display = "none"; });
+    ["cf-stroller","cf-dogs"].forEach(id=>{ document.getElementById(id).checked = false; });
+    const ol = document.getElementById("cf-other-label"); if(ol) ol.value = "";
+    setEditUi(false);
+  }
+  function startEdit(a){
+    resetForm();
+    editingId = a.id;
+    detailModal.style.display = "none";
+    addForm.setAttribute("open","");
+    document.getElementById("cf-name").value = a.name || "";
+    cfRegion.value = a.region;
+    const types = actTypes(a).filter(t=>TYPES[t]);
+    cfType.querySelectorAll(".opt-btn").forEach(b=> b.classList.toggle("active", types.includes(b.dataset.val)));
+    renderCfTypeSubs();
+    const ol = document.getElementById("cf-other-label"); if(ol && a.customTypeLabel) ol.value = a.customTypeLabel;
+    cfSubcats.querySelectorAll('[data-role="cf-sub"]').forEach(grp=>{
+      const vals = actTagVals(a, grp.dataset.type, grp.dataset.key);
+      const known = [...grp.querySelectorAll(".opt-btn")].map(b=>b.dataset.val);
+      const unknown = [];
+      vals.forEach(v=>{
+        if(known.includes(v) && v !== "__other__") grp.querySelector('[data-val="'+v+'"]').classList.add("active");
+        else unknown.push(v);
+      });
+      if(unknown.length){
+        grp.querySelector('[data-val="__other__"]').classList.add("active");
+        const mw = grp.parentNode.querySelector("[data-manual-wrap]"); mw.style.display = "block";
+        mw.querySelector("[data-manual]").value = unknown.join(", ");
+      }
+    });
+    const activate = (role, vals)=> cfSubcats.querySelectorAll('[data-role="'+role+'"] .opt-btn').forEach(b=> b.classList.toggle("active", vals.includes(b.dataset.val)));
+    activate("cf-ages", a.ages || []);
+    activate("cf-budget", actBudgets(a));
+    const g = actGroups(a); activate("cf-group", g.length >= 3 ? [] : g);
+    document.getElementById("cf-stroller").checked = !!a.stroller;
+    document.getElementById("cf-dogs").checked = !!a.dogs;
+    document.getElementById("cf-desc").value = a.desc || "";
+    fillMulti("locations", actList(a,"locations","location"));
+    fillMulti("images", actList(a,"images","image"));
+    fillMulti("websites", actList(a,"websites","website"));
+    fillMulti("phones", actList(a,"phones","phone"));
+    fillMulti("extras", a.extras || []);
+    document.getElementById("cf-coords").value = Array.isArray(a.coords) ? a.coords.join(", ") : "";
+    setEditUi(true);
+    addForm.scrollIntoView({behavior:"smooth", block:"start"});
+  }
+  document.getElementById("cf-cancel").addEventListener("click", ()=>{ resetForm(); addForm.removeAttribute("open"); });
+  document.getElementById("cf-restore").addEventListener("click", ()=>{
+    if(!editingId || !overrides[editingId]) return;
+    delete overrides[editingId]; saveOvr(overrides);
+    resetForm(); addForm.removeAttribute("open");
+    renderResults(); renderFavorites(); renderSearch();
+  });
+
   document.getElementById("cf-save").addEventListener("click", ()=>{
     const name = document.getElementById("cf-name").value.trim();
     if(!name){ document.getElementById("cf-name").focus(); return; }
@@ -1230,35 +1346,39 @@
     const ages = active("cf-ages");
     const budgets = active("cf-budget");
     const groups = active("cf-group");
-    const stroller = document.getElementById("cf-stroller").checked;
-    const dogs = document.getElementById("cf-dogs").checked;
     const locations = readMulti("locations"), images = readMulti("images"),
           websites = readMulti("websites"), phones = readMulti("phones"), extras = readMulti("extras");
-    const newActivity = {
-      id: "custom-" + Date.now(), name, region: cfRegion.value, type, types, tagsByType,
-      tags: tagsByType[type], ages, budget: budgets[0] || "free", budgets,
-      stroller, dogs, group: groups.length ? groups : ["small","medium","large"],
-      desc: document.getElementById("cf-desc").value.trim(), custom: true
+    const fields = {
+      name, region: cfRegion.value, type, types, tagsByType, tags: tagsByType[type], ages,
+      budget: budgets[0] || "free", budgets,
+      stroller: document.getElementById("cf-stroller").checked, dogs: document.getElementById("cf-dogs").checked,
+      group: groups.length ? groups : ["small","medium","large"],
+      desc: document.getElementById("cf-desc").value.trim()
     };
-    if(types.includes("other")){
-      const otherLabelEl = document.getElementById("cf-other-label");
-      const otherLabel = otherLabelEl ? otherLabelEl.value.trim() : "";
-      if(otherLabel) newActivity.customTypeLabel = otherLabel;
-    }
-    if(locations.length){ newActivity.locations = locations; newActivity.location = locations[0]; }
-    if(images.length){ newActivity.images = images; newActivity.image = images[0]; }
-    if(websites.length){ newActivity.websites = websites; newActivity.website = websites[0]; }
-    if(phones.length){ newActivity.phones = phones; newActivity.phone = phones[0]; }
-    if(extras.length) newActivity.extras = extras;
-    customActivities.push(newActivity);
-    saveCustom(customActivities);
-    document.getElementById("cf-name").value = "";
-    resetMulti();
-    document.getElementById("cf-desc").value = "";
-    cfSubcats.querySelectorAll(".opt-btn.active").forEach(b=>b.classList.remove("active"));
-    cfSubcats.querySelectorAll("[data-manual]").forEach(m=>{ m.value = ""; });
-    cfSubcats.querySelectorAll("[data-manual-wrap]").forEach(m=>{ m.style.display = "none"; });
-    document.getElementById("add-form").removeAttribute("open");
+    const cm = document.getElementById("cf-coords").value.match(/(-?\d+(?:\.\d+)?)\s*[,\s]\s*(-?\d+(?:\.\d+)?)/);
+    const coords = (cm && +cm[1] > 28 && +cm[1] < 34 && +cm[2] > 33 && +cm[2] < 37) ? [+cm[1], +cm[2]] : null;
+    const otherLabelEl = document.getElementById("cf-other-label");
+    const otherLabel = (types.includes("other") && otherLabelEl) ? otherLabelEl.value.trim() : "";
+
+    const isBase = editingId && BASE_ACTIVITIES.some(b=>b.id===editingId);
+    const orig = !editingId ? {} : (isBase ? (overrides[editingId] || BASE_ACTIVITIES.find(b=>b.id===editingId)) : customActivities.find(c=>c.id===editingId)) || {};
+    const act = Object.assign({}, orig, fields);
+    ["locations","location","images","image","websites","website","phones","phone","extras","customTypeLabel","coords"].forEach(k=> delete act[k]);
+    act.id = editingId || ("custom-" + Date.now());
+    if(isBase) act.edited = true; else act.custom = true;
+    if(otherLabel) act.customTypeLabel = otherLabel;
+    if(coords) act.coords = coords;
+    if(locations.length){ act.locations = locations; act.location = locations[0]; }
+    if(images.length){ act.images = images; act.image = images[0]; }
+    if(websites.length){ act.websites = websites; act.website = websites[0]; }
+    if(phones.length){ act.phones = phones; act.phone = phones[0]; }
+    if(extras.length) act.extras = extras;
+
+    if(isBase){ overrides[act.id] = act; saveOvr(overrides); }
+    else if(editingId){ customActivities = customActivities.map(c=> c.id===editingId ? act : c); saveCustom(customActivities); }
+    else { customActivities.push(act); saveCustom(customActivities); }
+    resetForm();
+    addForm.removeAttribute("open");
     renderResults(); renderFavorites(); renderSearch();
   });
 
