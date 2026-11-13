@@ -147,6 +147,9 @@
   .detail-contact div{ margin-bottom:6px; }
   .detail-note{ font-size:12px; color:var(--ink-soft); margin-top:18px; border-top:1px solid var(--line); padding-top:12px; }
   .activity-img{ width:100%; aspect-ratio:16/9; object-fit:cover; border-radius:8px; margin-bottom:4px; background:var(--stone-line); display:block; }
+  .multi-row{ display:flex; gap:6px; margin-bottom:6px; }
+  .multi-row input{ flex:1; min-width:0; }
+  .multi-rm{ border:1px solid var(--stone-line); background:transparent; color:var(--ink-soft); border-radius:8px; padding:0 10px; cursor:pointer; }
   .detail-img{ width:100%; aspect-ratio:16/9; object-fit:cover; border-radius:10px; margin-bottom:14px; background:var(--stone-line); display:block; }
   @media (prefers-reduced-motion:no-preference){
     .activity{ animation: rise .28s ease-out; }
@@ -247,7 +250,7 @@
       <div class="form-row"><label>איזור</label><select id="cf-region"></select></div>
       <div class="form-row"><label>סוג פעילות (אפשר לבחור כמה)</label><div class="btn-grid" id="cf-type"></div></div>
       <div id="cf-subcats"></div>
-      <div class="form-row"><label>קישור לתמונה (לא חובה)</label><input type="text" id="cf-image" placeholder="https://... קישור לתמונה שהעליתם בעצמכם"></div>
+      <div id="cf-multi"></div>
       <div class="form-row"><label>תיאור קצר (לא חובה)</label><textarea id="cf-desc" placeholder="פרטים שיעזרו לכם לזכור למה בחרתם במקום הזה"></textarea></div>
       <button class="save-btn" id="cf-save">שמירת הפעילות</button>
     </div>
@@ -699,23 +702,30 @@
     return opt ? opt[1] : val;
   }
 
+  function esc(t){ return String(t).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+  function safeUrl(u){ u = String(u).trim(); if(/^https?:\/\//i.test(u)) return u; if(/^[\w-]+(\.[\w-]+)+(\/|$)/.test(u)) return "https://"+u; return ""; }
+  function actList(a, plural, single){ return (a[plural] && a[plural].length) ? a[plural] : asArr(a[single]); }
+
   const detailModal = document.getElementById("detail-modal");
   const detailContent = document.getElementById("detail-content");
   function openDetail(a){
     let html = "";
-    if(a.image){
-      html += '<img class="detail-img" src="'+a.image+'" alt="'+a.name+'" onerror="this.remove()">';
-    }
-    html += '<h3 class="detail-title">'+a.name+'</h3>';
+    actList(a,"images","image").forEach(u=>{
+      const su = safeUrl(u);
+      if(su) html += '<img class="detail-img" src="'+esc(su)+'" alt="'+esc(a.name)+'" onerror="this.remove()">';
+    });
+    html += '<h3 class="detail-title">'+(a.custom ? esc(a.name) : a.name)+'</h3>';
     const tList = actTypes(a).filter(t=>TYPES[t]);
     const typeIcon = a.customTypeLabel ? "📌" : TYPES[a.type].icon;
     const typeLabelText = a.customTypeLabel || tList.map(t=>TYPES[t].label).join(" / ");
     html += '<div class="detail-region">'+typeIcon+' '+typeLabelText+' · '+(REGIONS[a.region]||"")+'</div>';
 
-    html += '<div class="detail-section"><h4>מיקום</h4><p class="detail-desc">'+(a.location || REGIONS[a.region] || "")+'</p></div>';
+    const locs = actList(a,"locations","location");
+    html += '<div class="detail-section"><h4>'+(locs.length>1 ? "מיקומים" : "מיקום")+'</h4>'+
+      (locs.length ? locs.map(l=>'<p class="detail-desc">'+(a.custom ? esc(l) : l)+'</p>').join("") : '<p class="detail-desc">'+(REGIONS[a.region] || "")+'</p>')+'</div>';
 
     if(a.desc){
-      html += '<div class="detail-section"><h4>על המקום</h4><p class="detail-desc">'+a.desc+'</p></div>';
+      html += '<div class="detail-section"><h4>על המקום</h4><p class="detail-desc">'+(a.custom ? esc(a.desc) : a.desc)+'</p></div>';
     }
 
     let tagsHtml = "";
@@ -727,10 +737,19 @@
     if(a.dogs) tagsHtml += '<span class="tag">🐕 ידידותי לכלבים</span>';
     html += '<div class="detail-section"><h4>מאפייני המקום</h4><div class="detail-tags">'+tagsHtml+'</div></div>';
 
-    if(a.phone || a.website || a.searchLink){
+    const phonesL = actList(a,"phones","phone"), sitesL = actList(a,"websites","website"), extrasL = a.extras || [];
+    if(phonesL.length || sitesL.length || a.searchLink || extrasL.length){
       html += '<div class="detail-section detail-contact"><h4>יצירת קשר ומידע נוסף</h4>';
-      if(a.phone) html += '<div>📞 <a href="tel:'+a.phone.replace(/\*/g,'')+'">'+a.phone+'</a></div>';
-      if(a.website) html += '<div>🔗 <a href="'+a.website+'" target="_blank" rel="noopener">אתר האינטרנט הרשמי</a></div>';
+      phonesL.forEach(ph=>{
+        const digits = String(ph).replace(/[^\d+]/g,'');
+        html += /^[\d\s\-+*()]+$/.test(ph) && digits ? '<div>📞 <a href="tel:'+esc(digits)+'">'+esc(ph)+'</a></div>' : '<div>📞 '+esc(ph)+'</div>';
+      });
+      sitesL.forEach((w,i)=>{
+        const su = safeUrl(w);
+        if(su) html += '<div>🔗 <a href="'+esc(su)+'" target="_blank" rel="noopener">'+(a.custom ? esc(w.replace(/^https?:\/\//i,"")) : "אתר האינטרנט הרשמי")+'</a></div>';
+        else html += '<div>🔗 '+esc(w)+'</div>';
+      });
+      extrasL.forEach(x=> html += '<div><strong>'+esc(x.label)+':</strong> '+esc(x.value)+'</div>');
       if(a.searchLink) html += '<div>🔍 <a href="'+a.searchLink+'" target="_blank" rel="noopener">חיפוש מידע עדכני, שעות וטלפון</a></div>';
       html += '</div>';
     }
@@ -893,7 +912,7 @@
     return v;
   }
   function searchHaystack(a){
-    const parts = [a.name, a.desc, a.location, REGIONS[a.region], a.customTypeLabel,
+    const parts = [a.name, a.desc, a.location, ...asArr(a.locations), ...(a.extras||[]).map(x=>x.label+" "+x.value), REGIONS[a.region], a.customTypeLabel,
                    ...actTypes(a).map(t=>TYPES[t] && TYPES[t].label)];
     allTagLabels(a).forEach(l=> parts.push(l));
     return { name: normText(a.name), all: normText(parts.filter(Boolean).join(" ")) };
@@ -1130,17 +1149,62 @@
       '<div class="check-row"><input type="checkbox" id="cf-stroller"><label for="cf-stroller">נגיש לעגלה / כיסא גלגלים</label></div>'+
       '<div class="check-row"><input type="checkbox" id="cf-dogs"><label for="cf-dogs">ידידותי לכלבים</label></div>';
     cfSubcats.appendChild(boolRow);
-
-    const contactRow = document.createElement("div"); contactRow.className = "form-row";
-    contactRow.innerHTML =
-      '<label>קישור לאתר (לא חובה)</label><input type="text" id="cf-website" placeholder="https://...">';
-    cfSubcats.appendChild(contactRow);
-
-    const phoneRow = document.createElement("div"); phoneRow.className = "form-row";
-    phoneRow.innerHTML =
-      '<label>פרטי יצירת קשר / טלפון (לא חובה)</label><input type="text" id="cf-phone" placeholder="טלפון, אימייל, או כל דרך אחרת ליצור קשר">';
-    cfSubcats.appendChild(phoneRow);
   }
+  // ---- repeatable fields (addresses, images, websites, phones, free-form extras) ----
+  const cfMulti = document.getElementById("cf-multi");
+  const MULTI_DEFS = [
+    {key:"locations", label:"כתובת / מיקום מדויק", ph:"כתובת, שם יישוב או הוראות הגעה"},
+    {key:"images",    label:"קישורי תמונות",       ph:"https://... קישור לתמונה"},
+    {key:"websites",  label:"קישורי אתרים",        ph:"https://..."},
+    {key:"phones",    label:"טלפונים / פרטי יצירת קשר", ph:"טלפון, אימייל או כל דרך אחרת"},
+    {key:"extras",    label:"שדות נוספים משלי",    ph:"הערך, למשל: 09:00-17:00", labelPh:"שם השדה, למשל: שעות פתיחה", pair:true}
+  ];
+  function addMultiRow(list, def, focus){
+    const row = document.createElement("div"); row.className = "multi-row";
+    if(def.pair){
+      const l = document.createElement("input"); l.type = "text"; l.placeholder = def.labelPh; l.dataset.part = "label";
+      row.appendChild(l);
+    }
+    const v = document.createElement("input"); v.type = "text"; v.placeholder = def.ph; v.dataset.part = "value";
+    row.appendChild(v);
+    const rm = document.createElement("button"); rm.type = "button"; rm.className = "multi-rm"; rm.textContent = "✕"; rm.title = "הסרת שורה";
+    rm.addEventListener("click", ()=>{
+      if(list.querySelectorAll(".multi-row").length > 1) row.remove();
+      else row.querySelectorAll("input").forEach(i=> i.value = "");
+    });
+    row.appendChild(rm);
+    list.appendChild(row);
+    if(focus) (row.querySelector("input")).focus();
+  }
+  MULTI_DEFS.forEach(def=>{
+    const wrap = document.createElement("div"); wrap.className = "form-row"; wrap.dataset.multi = def.key;
+    const lbl = document.createElement("label"); lbl.textContent = def.label + " (לא חובה, אפשר כמה)";
+    const list = document.createElement("div"); list.className = "multi-list";
+    const add = document.createElement("button"); add.type = "button"; add.className = "link-btn"; add.textContent = "+ הוספת עוד";
+    add.addEventListener("click", ()=> addMultiRow(list, def, true));
+    wrap.appendChild(lbl); wrap.appendChild(list); wrap.appendChild(add);
+    cfMulti.appendChild(wrap);
+    addMultiRow(list, def, false);
+  });
+  function readMulti(key){
+    const def = MULTI_DEFS.find(d=>d.key===key);
+    const out = [];
+    cfMulti.querySelectorAll('[data-multi="'+key+'"] .multi-row').forEach(r=>{
+      const v = r.querySelector('[data-part="value"]').value.trim();
+      if(def.pair){
+        const l = r.querySelector('[data-part="label"]').value.trim();
+        if(v || l) out.push({label:l || "פרט נוסף", value:v});
+      } else if(v) out.push(v);
+    });
+    return out;
+  }
+  function resetMulti(){
+    MULTI_DEFS.forEach(def=>{
+      const list = cfMulti.querySelector('[data-multi="'+def.key+'"] .multi-list');
+      list.innerHTML = ""; addMultiRow(list, def, false);
+    });
+  }
+
   renderCfCommon();
   renderCfTypeSubs();
 
@@ -1168,9 +1232,8 @@
     const groups = active("cf-group");
     const stroller = document.getElementById("cf-stroller").checked;
     const dogs = document.getElementById("cf-dogs").checked;
-    const image = document.getElementById("cf-image").value.trim();
-    const website = document.getElementById("cf-website").value.trim();
-    const phone = document.getElementById("cf-phone").value.trim();
+    const locations = readMulti("locations"), images = readMulti("images"),
+          websites = readMulti("websites"), phones = readMulti("phones"), extras = readMulti("extras");
     const newActivity = {
       id: "custom-" + Date.now(), name, region: cfRegion.value, type, types, tagsByType,
       tags: tagsByType[type], ages, budget: budgets[0] || "free", budgets,
@@ -1182,15 +1245,15 @@
       const otherLabel = otherLabelEl ? otherLabelEl.value.trim() : "";
       if(otherLabel) newActivity.customTypeLabel = otherLabel;
     }
-    if(image) newActivity.image = image;
-    if(website) newActivity.website = website;
-    if(phone) newActivity.phone = phone;
+    if(locations.length){ newActivity.locations = locations; newActivity.location = locations[0]; }
+    if(images.length){ newActivity.images = images; newActivity.image = images[0]; }
+    if(websites.length){ newActivity.websites = websites; newActivity.website = websites[0]; }
+    if(phones.length){ newActivity.phones = phones; newActivity.phone = phones[0]; }
+    if(extras.length) newActivity.extras = extras;
     customActivities.push(newActivity);
     saveCustom(customActivities);
     document.getElementById("cf-name").value = "";
-    document.getElementById("cf-image").value = "";
-    document.getElementById("cf-website").value = "";
-    document.getElementById("cf-phone").value = "";
+    resetMulti();
     document.getElementById("cf-desc").value = "";
     cfSubcats.querySelectorAll(".opt-btn.active").forEach(b=>b.classList.remove("active"));
     cfSubcats.querySelectorAll("[data-manual]").forEach(m=>{ m.value = ""; });
