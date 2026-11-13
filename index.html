@@ -245,7 +245,7 @@
     <div class="form-body">
       <div class="form-row"><label>שם הפעילות</label><input type="text" id="cf-name" placeholder="למשל: פארק השכונה שלנו"></div>
       <div class="form-row"><label>איזור</label><select id="cf-region"></select></div>
-      <div class="form-row"><label>סוג פעילות</label><select id="cf-type"></select></div>
+      <div class="form-row"><label>סוג פעילות (אפשר לבחור כמה)</label><div class="btn-grid" id="cf-type"></div></div>
       <div id="cf-subcats"></div>
       <div class="form-row"><label>קישור לתמונה (לא חובה)</label><input type="text" id="cf-image" placeholder="https://... קישור לתמונה שהעליתם בעצמכם"></div>
       <div class="form-row"><label>תיאור קצר (לא חובה)</label><textarea id="cf-desc" placeholder="פרטים שיעזרו לכם לזכור למה בחרתם במקום הזה"></textarea></div>
@@ -648,19 +648,39 @@
     if(state.locationMode === "gps" && state.userCoords && a.coords) return distanceKm(state.userCoords[0], state.userCoords[1], a.coords[0], a.coords[1]);
     return null;
   }
+  function asArr(v){ return Array.isArray(v) ? v : (v === undefined || v === null || v === "" ? [] : [v]); }
+  function actTypes(a){ return (a.types && a.types.length) ? a.types : [a.type]; }
+  function actTagVals(a, t, key){
+    if(a.tagsByType && a.tagsByType[t]) return asArr(a.tagsByType[t][key]);
+    return t === a.type ? asArr((a.tags||{})[key]) : [];
+  }
+  function actBudgets(a){ return (a.budgets && a.budgets.length) ? a.budgets : asArr(a.budget); }
+  function actGroups(a){ return asArr(a.group); }
+  function allTagLabels(a){
+    const out = [];
+    actTypes(a).forEach(t=>{
+      if(!QUESTIONS[t]) return;
+      QUESTIONS[t].forEach(q=>{
+        actTagVals(a,t,q.key).forEach(v=>{ const l = tagLabel(t,q.key,v); if(l && !out.includes(l)) out.push(l); });
+      });
+    });
+    return out;
+  }
   function matchesSubcat(a){
-    if(!state.types.includes(a.type)) return false;
-    const filters = state.subcatByType[a.type] || {};
-    return QUESTIONS[a.type].every(q=>{
-      const chosen = filters[q.key] || [];
-      if(chosen.length === 0) return true;
-      return chosen.includes(a.tags[q.key]);
+    return actTypes(a).some(t=>{
+      if(!state.types.includes(t) || !QUESTIONS[t]) return false;
+      const filters = state.subcatByType[t] || {};
+      return QUESTIONS[t].every(q=>{
+        const chosen = filters[q.key] || [];
+        if(chosen.length === 0) return true;
+        return actTagVals(a,t,q.key).some(v=>chosen.includes(v));
+      });
     });
   }
   function matchesGlobal(a){
     if(state.global.ages.length && !(a.ages||[]).some(v=>state.global.ages.includes(v))) return false;
-    if(state.global.budget.length && !state.global.budget.includes(a.budget)) return false;
-    if(state.global.group.length && !(a.group||[]).some(v=>state.global.group.includes(v))) return false;
+    if(state.global.budget.length && !actBudgets(a).some(v=>state.global.budget.includes(v))) return false;
+    if(state.global.group.length && !actGroups(a).some(v=>state.global.group.includes(v))) return false;
     if(state.strollerOnly && !a.stroller) return false;
     if(state.dogsOnly && !a.dogs) return false;
     return true;
@@ -687,8 +707,9 @@
       html += '<img class="detail-img" src="'+a.image+'" alt="'+a.name+'" onerror="this.remove()">';
     }
     html += '<h3 class="detail-title">'+a.name+'</h3>';
+    const tList = actTypes(a).filter(t=>TYPES[t]);
     const typeIcon = a.customTypeLabel ? "📌" : TYPES[a.type].icon;
-    const typeLabelText = a.customTypeLabel || TYPES[a.type].label;
+    const typeLabelText = a.customTypeLabel || tList.map(t=>TYPES[t].label).join(" / ");
     html += '<div class="detail-region">'+typeIcon+' '+typeLabelText+' · '+(REGIONS[a.region]||"")+'</div>';
 
     html += '<div class="detail-section"><h4>מיקום</h4><p class="detail-desc">'+(a.location || REGIONS[a.region] || "")+'</p></div>';
@@ -698,9 +719,9 @@
     }
 
     let tagsHtml = "";
-    Object.entries(a.tags||{}).forEach(([k,v])=>{ tagsHtml += '<span class="tag">'+tagLabel(a.type,k,v)+'</span>'; });
+    allTagLabels(a).forEach(l=>{ tagsHtml += '<span class="tag">'+l+'</span>'; });
     (a.ages||[]).forEach(v=> tagsHtml += '<span class="tag">'+globalLabel("ages",v)+'</span>');
-    if(a.budget) tagsHtml += '<span class="tag">'+globalLabel("budget",a.budget)+'</span>';
+    actBudgets(a).forEach(v=> tagsHtml += '<span class="tag">'+globalLabel("budget",v)+'</span>');
     (a.group||[]).forEach(v=> tagsHtml += '<span class="tag">'+globalLabel("group",v)+'</span>');
     if(a.stroller) tagsHtml += '<span class="tag">♿ נגיש לעגלה/כ.גלגלים</span>';
     if(a.dogs) tagsHtml += '<span class="tag">🐕 ידידותי לכלבים</span>';
@@ -753,9 +774,14 @@
     const bits = [];
     if(a.stroller) bits.push("♿ נגיש לעגלה/כ.גלגלים");
     if(a.dogs) bits.push("🐕 ידידותי לכלבים");
-    if(a.budget === "free") bits.push("חינם");
-    else if(a.budget === "low") bits.push("₪ עלות מתונה");
-    else if(a.budget === "high") bits.push("₪₪ יקר יותר");
+    const bs = actBudgets(a);
+    if(bs.length === 1){
+      if(bs[0] === "free") bits.push("חינם");
+      else if(bs[0] === "low") bits.push("₪ עלות מתונה");
+      else if(bs[0] === "high") bits.push("₪₪ יקר יותר");
+    } else if(bs.length > 1){
+      bits.push(bs.map(v=>({free:"חינם",low:"₪",high:"₪₪"}[v]||v)).join(" / "));
+    }
     return bits;
   }
 
@@ -780,8 +806,8 @@
     if(a.desc){ const p = document.createElement("p"); p.className = "desc"; p.textContent = a.desc; div.appendChild(p); }
 
     const tagsWrap = document.createElement("div"); tagsWrap.className = "tags";
-    Object.entries(a.tags||{}).forEach(([k,v])=>{
-      const t = document.createElement("span"); t.className = "tag"; t.textContent = tagLabel(a.type, k, v);
+    allTagLabels(a).forEach(l=>{
+      const t = document.createElement("span"); t.className = "tag"; t.textContent = l;
       tagsWrap.appendChild(t);
     });
     div.appendChild(tagsWrap);
@@ -868,8 +894,8 @@
   }
   function searchHaystack(a){
     const parts = [a.name, a.desc, a.location, REGIONS[a.region], a.customTypeLabel,
-                   TYPES[a.type] && TYPES[a.type].label];
-    Object.entries(a.tags||{}).forEach(([k,v])=> parts.push(tagLabel(a.type,k,v)));
+                   ...actTypes(a).map(t=>TYPES[t] && TYPES[t].label)];
+    allTagLabels(a).forEach(l=> parts.push(l));
     return { name: normText(a.name), all: normText(parts.filter(Boolean).join(" ")) };
   }
   function runSearch(query){
@@ -992,7 +1018,7 @@
 
     const legend = document.getElementById("map-legend");
     legend.innerHTML = "";
-    const usedTypes = [...new Set(list.map(a=>a.type))];
+    const usedTypes = [...new Set(list.flatMap(a=>actTypes(a)))].filter(t=>TYPES[t]);
     usedTypes.forEach(t=>{
       const span = document.createElement("span");
       span.innerHTML = '<i style="background:'+TYPES[t].color+'"></i>'+TYPES[t].label;
@@ -1021,50 +1047,83 @@
   Object.entries(REGIONS).forEach(([val,label])=>{ const o = document.createElement("option"); o.value = val; o.textContent = label; cfRegion.appendChild(o); });
 
   const cfType = document.getElementById("cf-type");
-  Object.entries(TYPES).forEach(([val,info])=>{ const o = document.createElement("option"); o.value = val; o.textContent = info.icon+" "+info.label; cfType.appendChild(o); });
-
   const cfSubcats = document.getElementById("cf-subcats");
-  function renderCfSubcats(){
-    cfSubcats.innerHTML = "";
-    const type = cfType.value;
+  const cfTypeSubs = document.createElement("div");
+  cfTypeSubs.id = "cf-type-subs";
+  cfSubcats.appendChild(cfTypeSubs);
 
-    if(type === "other"){
+  function selectedCfTypes(){ return [...cfType.querySelectorAll(".opt-btn.active")].map(b=>b.dataset.val); }
+  Object.entries(TYPES).forEach(([val,info],idx)=>{
+    const b = document.createElement("button"); b.type = "button"; b.className = "opt-btn" + (idx===0 ? " active" : "");
+    b.dataset.val = val; b.textContent = info.icon+" "+info.label;
+    b.addEventListener("click", ()=>{
+      const on = b.classList.contains("active");
+      if(on && selectedCfTypes().length === 1) return; // at least one type
+      b.classList.toggle("active");
+      renderCfTypeSubs();
+    });
+    cfType.appendChild(b);
+  });
+
+  function chipGroup(options, role, dataset){
+    const wrap = document.createElement("div"); wrap.className = "btn-grid"; wrap.dataset.role = role;
+    Object.entries(dataset||{}).forEach(([k,v])=> wrap.dataset[k] = v);
+    options.forEach(([val,text])=>{
+      const b = document.createElement("button"); b.type = "button"; b.className = "opt-btn"; b.textContent = text; b.dataset.val = val;
+      b.addEventListener("click", ()=>{
+        b.classList.toggle("active");
+        if(val === "__other__"){
+          const m = wrap.parentNode.querySelector("[data-manual-wrap]");
+          if(m) m.style.display = b.classList.contains("active") ? "block" : "none";
+        }
+      });
+      wrap.appendChild(b);
+    });
+    return wrap;
+  }
+
+  function renderCfTypeSubs(){
+    cfTypeSubs.innerHTML = "";
+    const types = selectedCfTypes();
+    if(types.includes("other")){
       const otherRow = document.createElement("div"); otherRow.className = "form-row";
       otherRow.innerHTML = '<label>איך לתייג את סוג הפעילות? (לא חובה)</label><input type="text" id="cf-other-label" placeholder="למשל: יום הולדת, מסעדה, חוג...">';
-      cfSubcats.appendChild(otherRow);
+      cfTypeSubs.appendChild(otherRow);
     }
+    types.forEach(type=>{
+      QUESTIONS[type].forEach(q=>{
+        const row = document.createElement("div"); row.className = "form-row";
+        const lbl = document.createElement("label");
+        lbl.textContent = (types.length > 1 ? TYPES[type].label+" · " : "") + q.label + " (אפשר כמה)";
+        const opts = q.options.concat([["__other__","אחר (הזנה ידנית)"]]);
+        const grp = chipGroup(opts, "cf-sub", {type:type, key:q.key});
+        const manualWrap = document.createElement("div"); manualWrap.dataset.manualWrap = "1"; manualWrap.style.display = "none"; manualWrap.style.marginTop = "6px";
+        const manualInput = document.createElement("input");
+        manualInput.type = "text"; manualInput.placeholder = "הקלידו ערך מדויק (אפשר כמה, מופרדים בפסיק)";
+        manualInput.dataset.manual = "1";
+        manualWrap.appendChild(manualInput);
+        row.appendChild(lbl); row.appendChild(grp); row.appendChild(manualWrap);
+        cfTypeSubs.appendChild(row);
+      });
+    });
+  }
 
-    QUESTIONS[type].forEach(q=>{
-      const row = document.createElement("div"); row.className = "form-row";
-      const lbl = document.createElement("label"); lbl.textContent = q.label;
-      const sel = document.createElement("select"); sel.dataset.key = q.key;
-      q.options.forEach(([val,text])=>{ const o = document.createElement("option"); o.value = val; o.textContent = text; sel.appendChild(o); });
-      const otherOpt = document.createElement("option"); otherOpt.value = "__other__"; otherOpt.textContent = "אחר (הזנה ידנית)";
-      sel.appendChild(otherOpt);
-      const manualInput = document.createElement("input");
-      manualInput.type = "text"; manualInput.placeholder = "הקלידו כאן את הערך המדויק";
-      manualInput.dataset.manualFor = q.key;
-      manualInput.style.marginTop = "6px";
-      manualInput.style.display = "none";
-      sel.addEventListener("change", ()=>{ manualInput.style.display = sel.value === "__other__" ? "block" : "none"; });
-      row.appendChild(lbl); row.appendChild(sel); row.appendChild(manualInput);
-      cfSubcats.appendChild(row);
-    });
+  function renderCfCommon(){
     const ageRow = document.createElement("div"); ageRow.className = "form-row";
-    ageRow.innerHTML = '<label>מתאים לגילאים</label>';
-    const ageWrap = document.createElement("div"); ageWrap.className = "btn-grid"; ageWrap.dataset.role = "cf-ages";
-    GLOBAL_MULTI[0].options.forEach(([val,text])=>{
-      const b = document.createElement("button"); b.type="button"; b.className = "opt-btn"; b.textContent = text; b.dataset.val = val;
-      b.addEventListener("click", ()=> b.classList.toggle("active"));
-      ageWrap.appendChild(b);
-    });
-    ageRow.appendChild(ageWrap); cfSubcats.appendChild(ageRow);
+    ageRow.innerHTML = '<label>מתאים לגילאים (אפשר כמה)</label>';
+    ageRow.appendChild(chipGroup(GLOBAL_MULTI[0].options, "cf-ages"));
+    cfSubcats.appendChild(ageRow);
 
     const budgetRow = document.createElement("div"); budgetRow.className = "form-row";
-    budgetRow.innerHTML = '<label>תקציב</label>';
-    const budgetSel = document.createElement("select"); budgetSel.dataset.role = "cf-budget";
-    [["free","חינם"],["low","עלות מתונה"],["high","יקר יותר"]].forEach(([val,text])=>{ const o=document.createElement("option"); o.value=val; o.textContent=text; budgetSel.appendChild(o); });
-    budgetRow.appendChild(budgetSel); cfSubcats.appendChild(budgetRow);
+    budgetRow.innerHTML = '<label>תקציב (אפשר כמה)</label>';
+    budgetRow.appendChild(chipGroup([["free","חינם"],["low","עלות מתונה"],["high","יקר יותר"]], "cf-budget"));
+    cfSubcats.appendChild(budgetRow);
+
+    const groupRow = document.createElement("div"); groupRow.className = "form-row";
+    groupRow.innerHTML = '<label>גודל קבוצה (אפשר כמה; ללא בחירה = מתאים לכולם)</label>';
+    const gOpts = (GLOBAL_MULTI.find(g=>g.key==="group")||{options:[]}).options;
+    groupRow.appendChild(chipGroup(gOpts, "cf-group"));
+    cfSubcats.appendChild(groupRow);
 
     const boolRow = document.createElement("div"); boolRow.className = "form-row";
     boolRow.innerHTML =
@@ -1082,35 +1141,43 @@
       '<label>פרטי יצירת קשר / טלפון (לא חובה)</label><input type="text" id="cf-phone" placeholder="טלפון, אימייל, או כל דרך אחרת ליצור קשר">';
     cfSubcats.appendChild(phoneRow);
   }
-  cfType.addEventListener("change", renderCfSubcats);
-  renderCfSubcats();
+  renderCfCommon();
+  renderCfTypeSubs();
 
   document.getElementById("cf-save").addEventListener("click", ()=>{
     const name = document.getElementById("cf-name").value.trim();
     if(!name){ document.getElementById("cf-name").focus(); return; }
-    const type = cfType.value;
-    const tags = {};
-    cfSubcats.querySelectorAll("select[data-key]").forEach(sel=>{
-      if(sel.value === "__other__"){
-        const manual = cfSubcats.querySelector('[data-manual-for="'+sel.dataset.key+'"]');
-        tags[sel.dataset.key] = (manual && manual.value.trim()) ? manual.value.trim() : "";
-      } else {
-        tags[sel.dataset.key] = sel.value;
-      }
+    const types = selectedCfTypes();
+    const type = types[0];
+    const tagsByType = {};
+    types.forEach(t=> tagsByType[t] = {});
+    cfSubcats.querySelectorAll('[data-role="cf-sub"]').forEach(grp=>{
+      const t = grp.dataset.type, key = grp.dataset.key;
+      const vals = [];
+      grp.querySelectorAll(".opt-btn.active").forEach(btn=>{
+        if(btn.dataset.val === "__other__"){
+          const m = grp.parentNode.querySelector("[data-manual]");
+          if(m) m.value.split(/[,،]/).map(x=>x.trim()).filter(Boolean).forEach(x=>vals.push(x));
+        } else vals.push(btn.dataset.val);
+      });
+      tagsByType[t][key] = vals;
     });
-    const ages = [...cfSubcats.querySelectorAll('[data-role="cf-ages"] .opt-btn.active')].map(b=>b.dataset.val);
-    const budget = cfSubcats.querySelector('[data-role="cf-budget"]').value;
+    const active = role => [...cfSubcats.querySelectorAll('[data-role="'+role+'"] .opt-btn.active')].map(b=>b.dataset.val);
+    const ages = active("cf-ages");
+    const budgets = active("cf-budget");
+    const groups = active("cf-group");
     const stroller = document.getElementById("cf-stroller").checked;
     const dogs = document.getElementById("cf-dogs").checked;
     const image = document.getElementById("cf-image").value.trim();
     const website = document.getElementById("cf-website").value.trim();
     const phone = document.getElementById("cf-phone").value.trim();
     const newActivity = {
-      id: "custom-" + Date.now(), name, region: cfRegion.value, type, tags,
-      ages, budget, stroller, dogs, group:["small","medium","large"],
+      id: "custom-" + Date.now(), name, region: cfRegion.value, type, types, tagsByType,
+      tags: tagsByType[type], ages, budget: budgets[0] || "free", budgets,
+      stroller, dogs, group: groups.length ? groups : ["small","medium","large"],
       desc: document.getElementById("cf-desc").value.trim(), custom: true
     };
-    if(type === "other"){
+    if(types.includes("other")){
       const otherLabelEl = document.getElementById("cf-other-label");
       const otherLabel = otherLabelEl ? otherLabelEl.value.trim() : "";
       if(otherLabel) newActivity.customTypeLabel = otherLabel;
@@ -1125,6 +1192,9 @@
     document.getElementById("cf-website").value = "";
     document.getElementById("cf-phone").value = "";
     document.getElementById("cf-desc").value = "";
+    cfSubcats.querySelectorAll(".opt-btn.active").forEach(b=>b.classList.remove("active"));
+    cfSubcats.querySelectorAll("[data-manual]").forEach(m=>{ m.value = ""; });
+    cfSubcats.querySelectorAll("[data-manual-wrap]").forEach(m=>{ m.style.display = "none"; });
     document.getElementById("add-form").removeAttribute("open");
     renderResults(); renderFavorites(); renderSearch();
   });
