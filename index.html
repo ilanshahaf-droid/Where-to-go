@@ -101,6 +101,14 @@
   .del-btn{ background:none; border:none; color:#a33; font-size:12.5px; cursor:pointer; text-decoration:underline; }
   .dist-tag{ font-size:12px; color:var(--ink-soft); }
   .empty-note{ font-size:14px; color:var(--ink-soft); padding:10px 2px; }
+  .search-card{ margin-top:16px; }
+  .search-box{ position:relative; }
+  .search-box input{ width:100%; padding:13px 44px 13px 40px; border-radius:24px; border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-family:"Heebo",sans-serif; font-size:16px; }
+  .search-box input:focus{ outline:2px solid var(--sky); outline-offset:1px; border-color:var(--sky); }
+  .search-box .s-ic{ position:absolute; right:15px; top:50%; transform:translateY(-50%); font-size:16px; pointer-events:none; }
+  .search-box .s-clear{ position:absolute; left:10px; top:50%; transform:translateY(-50%); background:var(--stone-line); border:none; width:26px; height:26px; border-radius:50%; cursor:pointer; color:var(--ink); font-size:13px; display:none; }
+  .search-hint{ font-size:12.5px; color:var(--ink-soft); margin:8px 4px 0; }
+  #search-results{ display:none; margin-top:14px; }
   details.add-form{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:4px 18px 4px; margin-bottom:16px; }
   details.add-form summary{ cursor:pointer; padding:14px 0; font-weight:600; font-size:15px; list-style:none; display:flex; align-items:center; gap:8px; }
   details.add-form summary::-webkit-details-marker{ display:none; }
@@ -157,6 +165,22 @@
 
 <div class="wrap">
 
+  <!-- SEARCH -->
+  <div class="search-card">
+    <div class="search-box">
+      <span class="s-ic">🔍</span>
+      <input type="search" id="search-input" placeholder="חיפוש לפי שם מקום או פעילות (למשל: ספארי, קטיף, חיפה)" autocomplete="off" enterkeyhint="search" aria-label="חיפוש פעילות">
+      <button type="button" class="s-clear" id="search-clear" aria-label="ניקוי חיפוש">✕</button>
+    </div>
+    <p class="search-hint" id="search-hint">או בחרו לפי אזור וסוג פעילות למטה</p>
+    <div id="search-results">
+      <div class="results-count" id="search-count"></div>
+      <div id="search-list"></div>
+    </div>
+  </div>
+
+  <div id="guided-flow">
+
   <!-- STEP 1: LOCATION -->
   <section class="card" id="step-location">
     <div class="step-row"><span class="blaze" style="--blaze-color:#c0392b"></span><span class="stepline"><b>שלב 1</b> · איפה מחפשים?</span></div>
@@ -212,6 +236,8 @@
     <div id="results-list"></div>
     <div class="reset-line"><button class="link-btn" id="reset-btn">איפוס כל הסינון</button></div>
   </section>
+
+  </div><!-- /guided-flow -->
 
   <!-- ADD CUSTOM -->
   <details class="add-form" id="add-form">
@@ -783,7 +809,7 @@
         saveCustom(customActivities);
         favorites = favorites.filter(id=>id!==a.id);
         saveFavs(favorites);
-        renderResults(); renderFavorites();
+        renderResults(); renderFavorites(); renderSearch();
       });
       leftBit.appendChild(delBtn);
     }
@@ -818,6 +844,77 @@
     document.getElementById("results-list").style.display = "block";
     renderResults();
   });
+
+  // ---------- SEARCH ----------
+  const searchInput = document.getElementById("search-input");
+  const searchClear = document.getElementById("search-clear");
+  const searchHint = document.getElementById("search-hint");
+  const searchResultsEl = document.getElementById("search-results");
+  const searchCount = document.getElementById("search-count");
+  const searchList = document.getElementById("search-list");
+  const guidedFlow = document.getElementById("guided-flow");
+
+  function normText(s){
+    return String(s||"").toLowerCase()
+      .replace(/[֑-ׇ]/g, "")      // niqqud / cantillation
+      .replace(/["'`״׳’“”]/g, "")
+      .replace(/[-–—_.,:;!?()\/\\]/g, " ")
+      .replace(/\s+/g, " ").trim();
+  }
+  function tokenVariants(tok){
+    const v = [tok];
+    if(tok.length > 3 && "בלמהוש".includes(tok[0])) v.push(tok.slice(1)); // Hebrew prefix letters
+    return v;
+  }
+  function searchHaystack(a){
+    const parts = [a.name, a.desc, a.location, REGIONS[a.region], a.customTypeLabel,
+                   TYPES[a.type] && TYPES[a.type].label];
+    Object.entries(a.tags||{}).forEach(([k,v])=> parts.push(tagLabel(a.type,k,v)));
+    return { name: normText(a.name), all: normText(parts.filter(Boolean).join(" ")) };
+  }
+  function runSearch(query){
+    const toks = normText(query).split(" ").filter(Boolean);
+    if(!toks.length) return [];
+    const scored = [];
+    allActivities().forEach(a=>{
+      const h = searchHaystack(a);
+      let score = 0;
+      const ok = toks.every(tok=>{
+        const vs = tokenVariants(tok);
+        if(vs.some(x=> h.name.includes(x))){ score += 3; return true; }
+        if(vs.some(x=> h.all.includes(x))){ score += 1; return true; }
+        return false;
+      });
+      if(ok) scored.push({a, score});
+    });
+    scored.sort((x,y)=> y.score - x.score);
+    return scored.map(x=>x.a);
+  }
+  function renderSearch(){
+    const q = searchInput.value;
+    const active = normText(q).length > 0;
+    searchClear.style.display = q ? "block" : "none";
+    guidedFlow.style.display = active ? "none" : "block";
+    searchResultsEl.style.display = active ? "block" : "none";
+    searchHint.style.display = active ? "none" : "block";
+    if(!active){ searchList.innerHTML = ""; searchCount.textContent = ""; return; }
+    const list = runSearch(q);
+    searchCount.textContent = list.length === 1 ? "נמצאה תוצאה אחת" : (list.length ? ("נמצאו " + list.length + " תוצאות") : "");
+    searchList.innerHTML = "";
+    if(!list.length){
+      const p = document.createElement("p"); p.className = "empty-note";
+      p.textContent = "לא נמצאו תוצאות. נסו מילה אחרת (שם מקום, עיר, אזור או סוג פעילות), או נקו את החיפוש כדי לבחור לפי אזור וסוג.";
+      searchList.appendChild(p);
+      return;
+    }
+    list.forEach(a=>{
+      const card = activityCard(a);
+      card.id = "scard-" + a.id; // avoid duplicate ids with the guided results
+      searchList.appendChild(card);
+    });
+  }
+  searchInput.addEventListener("input", renderSearch);
+  searchClear.addEventListener("click", ()=>{ searchInput.value = ""; renderSearch(); searchInput.focus(); });
 
   // ---------- SCHEMATIC MAP ----------
   const LON_MIN=34.2, LON_MAX=36.0, LAT_MIN=29.4, LAT_MAX=33.4, MAP_W=260, MAP_H=580;
@@ -1029,7 +1126,7 @@
     document.getElementById("cf-phone").value = "";
     document.getElementById("cf-desc").value = "";
     document.getElementById("add-form").removeAttribute("open");
-    renderResults(); renderFavorites();
+    renderResults(); renderFavorites(); renderSearch();
   });
 
   renderFavorites();
